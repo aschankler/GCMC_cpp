@@ -2,7 +2,7 @@
 #define MY_CLASS
 
 class vec;
-class elements;
+class element;
 class atom;
 class cell;
 class qe_io;

@@ -2,18 +2,22 @@
 #define CELL
 
 #include <fstream>
+#include <vector>
 #include "class.h"
 #include "vec.h"
+#include "element.h"
 #include "atom.h"
 
 class cell
 {
 private:
-	int num_atm;
+	size_t num_ele;
+	size_t num_atm;
 	vec latt[3];
-	atom *at_head;
+	vector<element> ele_list;
+	vector<atom> atm_list;
 public:
-	void read_from_in(std::ifstream& in, elements& el);
+	void read_from_in(std::ifstream& in);
 
 	void print();
 };

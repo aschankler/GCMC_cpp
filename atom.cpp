@@ -1,42 +1,31 @@
 #include <iostream>
 #include <cstring>
 #include <sstream>
+#include <cstdlib>
 #include "atom.h"
 #include "vec.h"
-#include "elements.h"
+#include "element.h"
 
 using namespace std;
 
-atom :: atom()
+void atom :: line_from_in(stringstream& ss, vector<element>& ele_list)
 {
-	type = -1;
-	pos.clean();
-	force.clean();
-	if_remove = 1;
-	next = nullptr;
-}
-
-void atom :: get_type(string sym, elements& el)
-{
-	for(int t1=0; t1<el.num_el; t1++)
-		if(sym == el.sym[t1])
+	string ele_symbol;
+	ss>>ele_symbol>>pos>>if_remove;
+	auto num_ele = ele_list.size();
+	for (size_t t1=0 ; t1 < num_ele ; t1++)
+	{
+		if (ele_symbol == ele_list[t1].sym)
 		{
 			type = t1;
+			ele = &ele_list[t1];
 			break;
 		}
-}
-
-void atom :: line_from_in(string& info, elements& el)
-{
-	stringstream ss;
-	string tmp;
-
-	ss << (info);
-	ss>>tmp>>pos>>if_remove;
-	this->get_type(tmp,el);
+	}
 }
 
 void atom :: print()
 {
-	cout<<type<<'\t'<<pos<<'\t'<<if_remove<<endl;
+	cout<<type<<'\t'<<pos<<'\t'<<if_remove<<'\t';
+	ele->print();
 }

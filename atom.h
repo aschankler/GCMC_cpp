@@ -2,23 +2,24 @@
 #define ATOM
 
 #include <cstring>
+#include <sstream>
+#include <vector>
 #include "class.h"
+#include "element.h"
 #include "vec.h"
 
 class atom
 {
 private:
 	int type;
+	element *ele;
 	vec pos;
 	vec force;
 	int if_remove;
-	atom *next;
 friend cell;
 public:
-	atom();
-	void get_type(std::string sym, elements& el);
-	void line_from_in(std::string& info, elements& el);
-	void line_from_qe(std::string& info, elements& el);
+	void line_from_in(std::stringstream& ss, vector<element>& ele_list);
+	void line_from_qe(std::stringstream& ss, vector<element>& ele_list);
 
 	void print();
 };

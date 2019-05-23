@@ -2,30 +2,28 @@
 #define ELEMENT
 
 #include <cstring>
-#include <fstream>
+#include <sstream>
 #include "class.h"
 
 using namespace std;
 
-class elements
+class element
 {
 private:
-	// number of elements
-	int num_el;
 	// element symbol
-	string * sym;
+	string sym;
 	// atomic weight
-	double * wt;
+	double wt;
 	// thermal debroye wavelength
-	double * l_tb;
+	double l_tb;
 	// min max threshold
-	double * r_min, * r_max;
+	double r_min, r_max;
 	// probabilit of choosing to add
-	double * p_add;
+	double p_add;
 friend atom;
 friend cell;
 public:
-	void get_param(std::ifstream& in);
+	void get_param(std::stringstream& ss);
 
 	void print();
 };
