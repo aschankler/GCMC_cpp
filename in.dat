@@ -1,0 +1,18 @@
+num_el = 3
+num_atm = 4
+
+begin_elements
+He 2   2 3  1
+Ne 8   3 4  2
+Ar 18  4 5  2
+
+begin_lattice
+1 0 0
+0 1 0
+0 0 1
+
+begin_atom_position
+He 1 1 1 1
+Ar 2 2 2 1
+Ar 3 3 3 0
+Ne 4 4 4 1
