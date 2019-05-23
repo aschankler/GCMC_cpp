@@ -10,14 +10,16 @@
 
 class cell
 {
-private:
+public:
 	size_t num_ele;
 	size_t num_atm;
+	double energy;
 	vec latt[3];
 	vector<element> ele_list;
 	vector<atom> atm_list;
-public:
+
 	void read_from_in(std::ifstream& in);
+	void read_from_qe(std::ifstream& in);
 
 	void print();
 };

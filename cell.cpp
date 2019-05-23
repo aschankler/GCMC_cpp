@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <cstring>
 #include "cell.h"
 #include "vec.h"
@@ -68,10 +69,46 @@ void cell :: read_from_in(ifstream& in)
 	in.clear(); in.seekg(ios::beg);
 }
 
+void cell :: read_from_qe(ifstream& in)
+{
+	string label_final_energy = "Final energy";
+	string label_final_position = "Begin final coordinates";
+	string tmp;
+	stringstream ss;
+	getline(in,tmp);
+	// find final status
+	while(tmp.find(label_final_energy) == string::npos && !in.eof())
+		getline(in,tmp);
+	if (! in.eof())
+	{
+		// save final energy
+		ss << (tmp);
+		getline(ss,tmp,'=');
+		ss >> energy;
+		ss.str(""); ss.clear();
+		// save final postion
+		while(tmp.find(label_final_position) == string::npos)
+			getline(in,tmp);
+		getline(in,tmp);
+		getline(in,tmp);
+		for (size_t t1=0; t1<num_atm; t1++)
+		{
+			in>>tmp>>atm_list[t1].pos;
+			getline(in,tmp);
+		}
+	}
+	else
+	{
+		cout<<"Warning: QE calculation does not converge, set energy to 0 Ry"<<endl;
+		energy = 0;
+	}
+}
+
 void cell :: print()
 {
 	cout<<"Number of elements: "<<num_ele<<endl;
 	cout<<"Number of atoms: "<<num_atm<<endl;
+	cout<<"Energy: "<<energy<<endl;
 	cout<<"List of elements:"<<endl;
 	for(size_t t1=0; t1<num_ele; t1++)
 		ele_list[t1].print();
