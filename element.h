@@ -14,8 +14,10 @@ private:
 	string sym;
 	// atomic weight
 	double wt;
+	// chemical potential
+	double mu;
 	// thermal debroye wavelength
-	double l_tb;
+	double tb;
 	// min max threshold
 	double r_min, r_max;
 	// probabilit of choosing to add
@@ -24,6 +26,7 @@ friend atom;
 friend cell;
 public:
 	void get_param(std::stringstream& ss);
+	void update_tb(double T);
 
 	void print();
 };

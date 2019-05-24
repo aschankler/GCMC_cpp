@@ -1,14 +1,23 @@
+max_iter    = 1000
+temperature = 500
+if_test     = 1
+begin_action_probability
+0.2 0.4 0.4
+
+h_min = 0
+h_max = 15.0
+
 num_ele = 3
 num_atm = 4
 
 begin_elements
-He 2   2 3  1
-Ne 8   3 4  2
-Ar 18  4 5  2
+He 2   -100 2 3  1
+Ne 8   -200 3 4  2
+Ar 18  -300 4 5  2
 
 begin_lattice
-1 0 0
-0 1 0
+2 0 0
+1 1 0
 0 0 1
 
 begin_atom_positions

@@ -12,6 +12,8 @@ void cell :: read_from_in(ifstream& in)
 {
 	string label_num_ele = "num_ele";
 	string label_num_atm = "num_atm";
+	string label_h_min = "h_min";
+	string label_h_max = "h_max";
 	string label_ele = "begin_elements";
 	string label_lat = "begin_lattice";
 	string label_atm = "begin_atom_positions";
@@ -32,6 +34,21 @@ void cell :: read_from_in(ifstream& in)
 		getline(in,tmp);
 	ss << (tmp);
 	getline(ss,tmp,'='); ss >> num_atm;
+	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
+
+	// get threshold of height
+	getline(in,tmp);
+	while(tmp.find(label_h_min) == string::npos)
+		getline(in,tmp);
+	ss << (tmp);
+	getline(ss,tmp,'='); ss >> h_min;
+	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
+
+	getline(in,tmp);
+	while(tmp.find(label_h_max) == string::npos)
+		getline(in,tmp);
+	ss << (tmp);
+	getline(ss,tmp,'='); ss >> h_max;
 	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
 
 	// generate element list
@@ -107,14 +124,23 @@ void cell :: read_from_qe(ifstream& in)
 void cell :: count_move_atoms()
 {
 	num_ele_each_move.resize(num_ele);
-	num_ele_move = 0;
+	num_atm_move = 0;
 	for(size_t t1=0; t1<num_ele; t1++)
 		num_ele_each_move[t1] = 0;
 	for(size_t t1=0; t1<num_atm; t1++)
 	{
-		num_ele_move += atm_list[t1].if_move;
+		num_atm_move += atm_list[t1].if_move;
 		num_ele_each_move[atm_list[t1].type] += atm_list[t1].if_move;
 	}
+}
+
+double cell :: get_volume()
+{
+	double h[3]={0,0,h_max-h_min};
+	vec hh;
+	hh=&h[0];
+	vol = (latt[0]^latt[1])*hh;
+	return vol;
 }
 
 void cell :: ad_atom(vec pos, int ele_type)
@@ -145,12 +171,32 @@ void cell :: sp_atom(int s1, int s2)
 	atm_list[s2] = tmp;
 }
 
+void cell :: min_distance(vec pos, double& rr, int& ind)
+{
+	double r_tmp;
+	rr = 1e10;
+	for(int t1=-1; t1<2; t1++)
+	for(int t2=-1; t2<2; t2++)
+	for(int t3=-1; t3<2; t3++)
+		for(size_t t4=0; t4<num_atm; t4++)
+		{
+			r_tmp=(pos + latt[0]*t1 + latt[1]*t2 + latt[2]*t3 - atm_list[t4].pos).norm();
+			if (rr > r_tmp)
+			{
+				rr = r_tmp;
+				ind = t4;
+			}
+		}
+}
+
 void cell :: print()
 {
 	cout<<"Number of elements: "<<num_ele<<endl;
 	cout<<"Number of atoms: "<<num_atm<<endl;
+	cout<<"Threshold of height: "<<h_min<<", "<<h_max<<endl;
 	cout<<"Energy: "<<energy<<endl;
-	cout<<"Total movable atoms: "<<num_ele_move<<endl;
+	cout<<"Volume: "<<vol<<endl;
+	cout<<"Total movable atoms: "<<num_atm_move<<endl;
 	cout<<"Movable atoms per elements: "<<endl;
 	for(size_t t1=0; t1<num_ele; t1++)
 		cout<<ele_list[t1].sym<<'\t'<<num_ele_each_move[t1]<<endl;

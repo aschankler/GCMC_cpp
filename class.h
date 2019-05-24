@@ -5,7 +5,7 @@ class vec;
 class element;
 class atom;
 class cell;
-class qe_io;
 class mc;
+class qe_cmd;
 
 #endif
