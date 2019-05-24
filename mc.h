@@ -23,6 +23,8 @@ public:
 
 	void read_from_in(std::ifstream& in);
 
+	cell create_new_structure(cell& sys1);
+
 	void print();
 };
 

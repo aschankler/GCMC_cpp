@@ -48,6 +48,9 @@ void mc :: read_from_in(ifstream& in)
 	in.clear(); in.seekg(ios::beg);
 }
 
+cell mc :: create_new_structure(cell& sys1)
+{}
+
 void mc :: print()
 {
 	cout<<"Max iteration: "<<max_iter<<endl;

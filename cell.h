@@ -46,6 +46,7 @@ public:
 	void sp_atom(int s1, int s2);
 
 	// calculation with input
+	void update_tb(double T);
 	void min_distance(vec pos, double& rr, int& ind);
 
 	void print();

@@ -23,6 +23,7 @@ int main()
 	sys1.read_from_in(input);
 	sys1.count_move_atoms();
 	sys1.get_volume();
+	sys1.update_tb(run1.T);
 	sys2 = sys1;
 	sys2.read_from_qe(qe_out);
 	sys2.ad_atom(pos1,0);

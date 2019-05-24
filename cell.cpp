@@ -171,6 +171,12 @@ void cell :: sp_atom(int s1, int s2)
 	atm_list[s2] = tmp;
 }
 
+void cell :: update_tb(double T)
+{
+	for(size_t t1=0; t1<num_ele; t1++)
+		ele_list[t1].update_tb(T);
+}
+
 void cell :: min_distance(vec pos, double& rr, int& ind)
 {
 	double r_tmp;
