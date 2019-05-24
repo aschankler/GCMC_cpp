@@ -11,7 +11,7 @@ using namespace std;
 void atom :: line_from_in(stringstream& ss, vector<element>& ele_list)
 {
 	string ele_symbol;
-	ss>>ele_symbol>>pos>>if_remove;
+	ss>>ele_symbol>>pos>>if_move;
 	auto num_ele = ele_list.size();
 	for (size_t t1=0 ; t1 < num_ele ; t1++)
 	{
@@ -26,6 +26,6 @@ void atom :: line_from_in(stringstream& ss, vector<element>& ele_list)
 
 void atom :: print()
 {
-	cout<<type<<'\t'<<pos<<'\t'<<force<<'\t'<<if_remove<<'\t';
+	cout<<type<<'\t'<<pos<<'\t'<<force<<'\t'<<if_move<<'\t';
 	ele->print();
 }

@@ -15,7 +15,7 @@ private:
 	element *ele;
 	vec pos;
 	vec force;
-	int if_remove;
+	int if_move;
 friend cell;
 public:
 	void line_from_in(std::stringstream& ss, vector<element>& ele_list);

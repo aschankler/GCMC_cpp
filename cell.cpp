@@ -104,11 +104,56 @@ void cell :: read_from_qe(ifstream& in)
 	}
 }
 
+void cell :: count_move_atoms()
+{
+	num_ele_each_move.resize(num_ele);
+	num_ele_move = 0;
+	for(size_t t1=0; t1<num_ele; t1++)
+		num_ele_each_move[t1] = 0;
+	for(size_t t1=0; t1<num_atm; t1++)
+	{
+		num_ele_move += atm_list[t1].if_move;
+		num_ele_each_move[atm_list[t1].type] += atm_list[t1].if_move;
+	}
+}
+
+void cell :: ad_atom(vec pos, int ele_type)
+{
+	atom tmp;
+	tmp.type = ele_type;
+	tmp.ele = &ele_list[ele_type];
+	tmp.pos = pos;
+	tmp.force = pos*0;
+	tmp.if_move = 1;
+	atm_list.push_back(tmp);
+	num_atm++;
+	count_move_atoms();
+}
+
+void cell :: rm_atom(int ind_atm)
+{
+	atm_list.erase(atm_list.begin() + ind_atm);
+	num_atm--;
+	count_move_atoms();
+}
+
+void cell :: sp_atom(int s1, int s2)
+{
+	atom tmp;
+	tmp = atm_list[s1];
+	atm_list[s1] = atm_list[s2];
+	atm_list[s2] = tmp;
+}
+
 void cell :: print()
 {
 	cout<<"Number of elements: "<<num_ele<<endl;
 	cout<<"Number of atoms: "<<num_atm<<endl;
 	cout<<"Energy: "<<energy<<endl;
+	cout<<"Total movable atoms: "<<num_ele_move<<endl;
+	cout<<"Movable atoms per elements: "<<endl;
+	for(size_t t1=0; t1<num_ele; t1++)
+		cout<<ele_list[t1].sym<<'\t'<<num_ele_each_move[t1]<<endl;
 	cout<<"List of elements:"<<endl;
 	for(size_t t1=0; t1<num_ele; t1++)
 		ele_list[t1].print();
