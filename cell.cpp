@@ -165,10 +165,10 @@ void cell :: rm_atom(int ind_atm)
 
 void cell :: sp_atom(int s1, int s2)
 {
-	atom tmp;
-	tmp = atm_list[s1];
-	atm_list[s1] = atm_list[s2];
-	atm_list[s2] = tmp;
+	vec tmp;
+	tmp = atm_list[s1].pos;
+	atm_list[s1].pos = atm_list[s2].pos;
+	atm_list[s2].pos = tmp;
 }
 
 void cell :: update_tb(double T)
@@ -206,9 +206,9 @@ void cell :: print()
 	cout<<"Movable atoms per elements: "<<endl;
 	for(size_t t1=0; t1<num_ele; t1++)
 		cout<<ele_list[t1].sym<<'\t'<<num_ele_each_move[t1]<<endl;
-	cout<<"List of elements:"<<endl;
-	for(size_t t1=0; t1<num_ele; t1++)
-		ele_list[t1].print();
+//	cout<<"List of elements:"<<endl;
+//	for(size_t t1=0; t1<num_ele; t1++)
+//		ele_list[t1].print();
 	cout<<"List of atoms:"<<endl;
 	for(size_t t1=0; t1<num_atm; t1++)
 		atm_list[t1].print();

@@ -24,6 +24,7 @@ private:
 	double p_add;
 friend atom;
 friend cell;
+friend mc;
 public:
 	void get_param(std::stringstream& ss);
 	void update_tb(double T);

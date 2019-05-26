@@ -17,6 +17,7 @@ private:
 	vec force;
 	int if_move;
 friend cell;
+friend mc;
 public:
 	void line_from_in(std::stringstream& ss, vector<element>& ele_list);
 	void line_from_qe(std::stringstream& ss, vector<element>& ele_list);

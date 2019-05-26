@@ -13,6 +13,7 @@ private:
 	double x[3];
 friend atom;
 friend cell;
+friend mc;
 public:
 	void import(double *);
 	void clean();					// reset value to zero
@@ -29,6 +30,7 @@ public:
 	friend std::ofstream& operator<<(std::ofstream&,vec);
 	friend std::stringstream& operator>>(std::stringstream&,vec&);
 	double norm();
+	vec rand_norm();
 
 	//debug
 	void print();

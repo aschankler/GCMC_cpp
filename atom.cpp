@@ -26,6 +26,6 @@ void atom :: line_from_in(stringstream& ss, vector<element>& ele_list)
 
 void atom :: print()
 {
-	cout<<type<<'\t'<<pos<<'\t'<<force<<'\t'<<if_move<<'\t';
-	ele->print();
+	cout<<ele->sym<<'\t'<<pos<<'\t'<<if_move<<endl;
+//	ele->print();
 }

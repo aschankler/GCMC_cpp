@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cstdlib>
 #include <cmath>
 #include "vec.h"
 
@@ -113,6 +114,20 @@ double vec :: norm()
 	double res=0;
 	res = x[0]*x[0] + x[1]*x[1] + x[2]*x[2];
 	return sqrt(res);
+}
+
+vec vec :: rand_norm()
+{
+	x[0] = (double)rand()/RAND_MAX;
+	x[1] = (double)rand()/RAND_MAX;
+	x[2] = (double)rand()/RAND_MAX;
+	while (this->norm() > 1)
+	{
+		x[0] = (double)rand()/RAND_MAX;
+		x[1] = (double)rand()/RAND_MAX;
+		x[2] = (double)rand()/RAND_MAX;
+	}
+	return (*this);
 }
 
 //==========debug================

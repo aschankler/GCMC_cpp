@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <ctime>
+#include <cstdlib>
 #include "element.h"
 #include "cell.h"
 #include "mc.h"
@@ -9,6 +11,7 @@ using namespace std;
 
 int main()
 {
+	srand(time(0));
 	ifstream input, qe_out;
 	input.open("in.dat");
 	qe_out.open("t.out");
@@ -24,21 +27,21 @@ int main()
 	sys1.count_move_atoms();
 	sys1.get_volume();
 	sys1.update_tb(run1.T);
+	sys1.read_from_qe(qe_out);
+	sys1.ad_atom(pos1,0);
+
 	sys2 = sys1;
-	sys2.read_from_qe(qe_out);
-	sys2.ad_atom(pos1,0);
-	sys2.ad_atom(pos1,1);
-	sys2.ad_atom(pos1,2);
-	sys2.ad_atom(pos1,2);
+	for (size_t t1=0; t1<10; t1++)
+	{
+		run1.create_new_structure(sys2,sys2);
+		cout<<"----------------"<<endl;
+	}
+	/*
 	sys2.rm_atom(4);
 	sys2.sp_atom(0,6);
+	*/
+	sys1.print();
+	cout<<"----------------"<<endl;
 	sys2.print();
-	cout<<endl;
-	run1.print();
-
-	for(size_t t1=0; t1<10; t1++)
-	{
-		sys2.min_distance(pos1*(t1/5.0),rr,ind);
-	}
 	return 0;
 }
