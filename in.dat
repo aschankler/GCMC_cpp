@@ -1,8 +1,8 @@
-max_iter    = 1000
+max_iter    = 3
 temperature = 500
-if_test     = 1
+if_test     = 0
 begin_action_probability (add remove swap)
-1.0 1.0 1.0
+3.0 5.0 2.0
 
 h_min = 0
 h_max = 9.0
@@ -10,10 +10,10 @@ h_max = 9.0
 num_ele = 3
 num_atm = 4
 
-begin_elements
-He 2   -100 2 3  1.0
-Ne 8   -200 2 3  1.0
-Ar 18  -300 2 3  1.0
+begin_elements (element mass mu r_min r_max add_p)
+He 2  -1.0   2 3  1.0
+Ne 8   0.001 2 3  1.0
+Ar 18  0.001 2 3  1.0
 
 begin_lattice
 6 0 0

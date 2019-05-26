@@ -123,13 +123,18 @@ void cell :: read_from_qe(ifstream& in)
 
 void cell :: count_move_atoms()
 {
+	num_ele_each.resize(num_ele);
 	num_ele_each_move.resize(num_ele);
 	num_atm_move = 0;
 	for(size_t t1=0; t1<num_ele; t1++)
+	{
+		num_ele_each[t1] = 0;
 		num_ele_each_move[t1] = 0;
+	}
 	for(size_t t1=0; t1<num_atm; t1++)
 	{
 		num_atm_move += atm_list[t1].if_move;
+		num_ele_each[atm_list[t1].type]++;
 		num_ele_each_move[atm_list[t1].type] += atm_list[t1].if_move;
 	}
 }
@@ -203,6 +208,9 @@ void cell :: print()
 	cout<<"Energy: "<<energy<<endl;
 	cout<<"Volume: "<<vol<<endl;
 	cout<<"Total movable atoms: "<<num_atm_move<<endl;
+	cout<<"Atoms per elements: "<<endl;
+	for(size_t t1=0; t1<num_ele; t1++)
+		cout<<ele_list[t1].sym<<'\t'<<num_ele_each[t1]<<endl;
 	cout<<"Movable atoms per elements: "<<endl;
 	for(size_t t1=0; t1<num_ele; t1++)
 		cout<<ele_list[t1].sym<<'\t'<<num_ele_each_move[t1]<<endl;

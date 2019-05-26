@@ -27,6 +27,8 @@ public:
 	double energy;
 	// number of movable atoms
 	int num_atm_move;
+	// number of atoms belonging each element
+	vector<int> num_ele_each;
 	// number of movable atoms belonging each element
 	vector<int> num_ele_each_move;
 	// volume of cell

@@ -4,6 +4,7 @@
 #include <cstring>
 #include <vector>
 #include <cstdlib>
+#include <cmath>
 #include "mc.h"
 
 using namespace std;
@@ -47,6 +48,9 @@ void mc :: read_from_in(ifstream& in)
 		getline(in,tmp);
 	in>>act_p[0]>>act_p[1]>>act_p[2];
 	in.clear(); in.seekg(ios::beg);
+
+	// initialize other parameters
+	opt_e = 0;
 }
 
 void mc :: create_new_structure(cell c_old, cell& c_new)
@@ -68,7 +72,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 	int act_type;
 	//=======================================
 	// check if each action is accessable, and adjust p if not
-	cout<<"Begin exam each action"<<endl;
+	cout<<"Begin adjust weight of actions:"<<endl;
 	//---------------------------------------
 	// check for add
 	if (act_p[0] > 0)
@@ -145,8 +149,9 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 		tmp_p[1] = 0;
 		tmp_p[2] = 0;
 	}
-	cout<<"After exam each action, weight of taking actions are:"<<endl;
-	cout<<"Add: "<<tmp_p[0]<<"    Remove: "<<tmp_p[1]<<"    Swap: "<<tmp_p[2]<<endl<<endl;
+	cout<<"    New weight of each action is:"<<endl;
+	cout<<"    Add: "<<tmp_p[0]<<"    Remove: "<<tmp_p[1]<<"    Swap: "<<tmp_p[2]<<endl;
+	cout<<"End adjust weight of actions"<<endl<<endl;
 	//=======================================
 	// create new structure
 	// decide which action to choose
@@ -173,19 +178,21 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 			add_p_sum -= tmp_p[t1];
 		}
 	}
-	cout<<"Choose action "<<act_type<<endl;
-	//-----------------------------------------
+	cout<<"Choose action "<<act_type<<". ";
+	//=======================================
 	switch(act_type)
 	{
+		//---------------------------------------
 		// add
 		case 0:
 		{
-			el_change = ele_type_add;
+			ele_change = ele_type_add;
 			num_change = 1;
 			c_new.ad_atom(pos_add,ele_type_add);
-			cout<<"Atom added, + "<<c_new.num_atm<<" "<<c_new.ele_list[ele_type_add].sym<<", position is "<<pos_add<<endl;
+			cout<<"Atom added, +"<<c_new.num_atm<<" "<<c_new.ele_list[ele_type_add].sym<<", position is "<<pos_add<<endl;
 			break;
 		}
+		//---------------------------------------
 		// remove
 		case 1:
 		{
@@ -203,12 +210,13 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 					atm_id_tmp--;
 				}
 			}
-			el_change = c_new.atm_list[atm_id_tmp].type;
+			ele_change = c_new.atm_list[atm_id_tmp].type;
 			num_change = -1;
 			c_new.rm_atom(atm_id_tmp);
-			cout<<"Atom removed, - "<<atm_id_tmp+1<<" "<<c_new.ele_list[el_change].sym<<endl;
+			cout<<"Atom removed, -"<<atm_id_tmp+1<<" "<<c_new.ele_list[ele_change].sym<<endl;
 			break;
 		}
+		//---------------------------------------
 		// swap
 		case 2:
 		{
@@ -240,12 +248,13 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 					atm_id_tmp2--;
 				}
 			}
-			el_change = -1;
+			ele_change = -1;
 			num_change = 0;
 			c_new.sp_atom(atm_id_tmp,atm_id_tmp2);
 			cout<<"Atoms swapped, "<<atm_id_tmp+1<<" "<<c_old.atm_list[atm_id_tmp].ele->sym<<" <--> "<<atm_id_tmp2+1<<" "<<c_old.atm_list[atm_id_tmp2].ele->sym<<endl;
 			break;
 		}
+		//---------------------------------------
 		default:
 		{
 			cout<<"Error: Undifined action type: "<<act_type<<endl;
@@ -253,6 +262,129 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 		}
 	}
 	cout<<endl;
+}
+
+void mc :: save_opt_structure(cell& c_new)
+{
+	opt_e = c_new.energy*ry_ev;
+	for(size_t t1=0; t1<c_new.num_atm; t1++)
+		opt_e -= c_new.atm_list[t1].ele->mu;
+	opt_c = c_new;
+	cout<<"Initialized the optimized free energy and structure"<<endl;
+}
+
+int mc :: if_accept(cell& c_old, cell& c_new)
+{
+	int accept=0;
+	double e1, e2;
+	double exp_pre, exp_main;
+
+	// calculate formation energy
+	e1 = c_old.energy * ry_ev;
+	e2 = c_new.energy * ry_ev;
+	for(size_t t1=0; t1<c_old.num_atm; t1++)
+		e1 -= c_old.atm_list[t1].ele->mu;
+	for(size_t t1=0; t1<c_new.num_atm; t1++)
+		e2 -= c_new.atm_list[t1].ele->mu;
+	//==============================================
+	cout<<"Evaluating whether to accept new structure"<<endl;
+	if (if_test)
+	{
+		cout<<"    Testing mode, randomly select to accept or reject"<<endl;
+	}
+	else
+	{
+		switch (num_change)
+		{
+			//---------------------------------------
+			// swap
+			case 0:
+			{
+				exp_main = exp((e1-e2)/T/kb);
+				cout<<"    (Exp.) total factor: "<<exp_main<<'\t'<<endl;
+				if (e2 < e1)
+				{
+					accept = 1;
+					cout<<"    Accepted, new structure has lower formation energy"<<endl;
+					if (e2 < opt_e)
+					{
+						opt_e = e2;
+						opt_c = c_new;
+						cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
+					}
+				}
+				else if ((double)rand()/RAND_MAX < exp((e1-e2)/T/kb))
+				{
+					accept = 1;
+					cout<<"    Accepted, but new structure has higher formation energy"<<endl;
+				}
+				else
+				{
+					accept = 0;
+					cout<<"    Rejected"<<endl;
+				}
+				break;
+			}
+			//---------------------------------------
+			// add and remove
+			case 1:
+			case -1:
+			{
+				// calculate prefactor and exp
+				c_new.ele_list[ele_change].update_tb(T);
+				if (num_change == 1)
+					exp_pre = c_new.vol/(c_new.num_ele_each[ele_change]*pow(c_new.ele_list[ele_change].tb,3));
+				else
+					exp_pre = c_old.num_ele_each[ele_change]*pow(c_new.ele_list[ele_change].tb,3)/c_new.vol;
+				exp_main = exp((e1-e2)/T/kb);
+				cout<<"    Pre. factor: "<<exp_pre<<"    exp. factor: "<<exp_main<<"    total factor: "<<exp_pre*exp_main<<endl;
+				// start evaluating whether to accept or reject
+				if (1 < exp_pre*exp_main)
+				{
+					accept = 1;
+					cout<<"    Accepted, new structure has lower volume-factored-in formation energy"<<endl;
+					if (e2 < opt_e)
+					{
+						opt_e = e2;
+						opt_c = c_new;
+						cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
+					}
+				}
+				else if ((double)rand()/RAND_MAX < exp_pre*exp_main)
+				{
+					accept = 1;
+					cout<<"    Accepted, but new structure has highter volume-factored-in formation energy"<<endl;
+					if (e2 < opt_e)
+					{
+						opt_e = e2;
+						opt_c = c_new;
+						cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
+					}
+				}
+				else
+				{
+					cout<<"    Rejected"<<endl;
+				}
+				break;
+			}
+			//---------------------------------------
+			// remove
+			/*
+			case -1:
+			{
+				break;
+			}
+			*/
+			//---------------------------------------
+			default:
+			{
+				cout<<"Error: Invalid number of atoms changed: "<<num_change<<endl;
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+	cout<<"Best formation energy is "<<opt_e<<endl<<endl;
+	return accept;
 }
 
 void mc :: print()

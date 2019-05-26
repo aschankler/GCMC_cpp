@@ -30,10 +30,13 @@ int main()
 	sys1.read_from_qe(qe_out);
 	sys1.ad_atom(pos1,0);
 
-	sys2 = sys1;
-	for (size_t t1=0; t1<10; t1++)
+	run1.save_opt_structure(sys1);
+	for (size_t t1=0; t1<run1.max_iter; t1++)
 	{
-		run1.create_new_structure(sys2,sys2);
+		run1.create_new_structure(sys1,sys2);
+		sys2.energy += ((double)rand()/RAND_MAX - 0.5)*0.1;
+		if (run1.if_accept(sys1,sys2))
+			sys1 = sys2;
 		cout<<"----------------"<<endl;
 	}
 	/*
