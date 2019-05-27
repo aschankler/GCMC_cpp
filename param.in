@@ -1,12 +1,12 @@
-num_core     = 16
+num_core     = 144
 npool        = 1
-ndiag        = 16
+ndiag        = 144
 qe_launcher  = "pw.x"
 mpi_launcher = "srun --cpu_bind=cores -c 2"
 
-max_iter     = 10
+max_iter     = 100
 temperature  = 500
-if_test      = 1
+if_test      = 0
 
 begin_action_probability (add remove swap)
 1.0 1.0 1.0
@@ -22,9 +22,9 @@ Na  22.990  -1196.2733922  1.0  3.0  0.5
 Sb  121.76  -2119.4243232  2.0  3.0  0.5
 
 begin_lattice
-5.314320151    0.000000000    0.000000000
+ 5.314320151    0.000000000    0.000000000
 -2.657160075    4.602336255    0.000000000
-0.000000000    0.000000000    22.0
+ 0.000000000    0.000000000    22.0
 
 begin_atom_positions
 Na     0.000000000    3.068224167    8.654790619 1
@@ -43,8 +43,8 @@ begin_qe_input
   outdir            = './'
   prefix            = 'GCMC'
   nstep             = 100
-  forc_conv_thr     = 1.d-3
-  etot_conv_thr     = 1.d-4
+  forc_conv_thr     = 1.d-2
+  etot_conv_thr     = 1.d-3
   verbosity         = 'high'
   tprnfor           = .TRUE.
   tstress           = .TRUE.
@@ -70,7 +70,7 @@ begin_qe_input
 &ELECTRONS 
   mixing_mode       = 'local-TF'
   mixing_beta       = 0.7
-  conv_thr          = 1.0e-5
+  conv_thr          = 1.0e-4
   electron_maxstep  = 100
 ! startingpot       = 'file'
 ! startingwfc       = 'file'
