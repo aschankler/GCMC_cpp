@@ -178,7 +178,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 			add_p_sum -= tmp_p[t1];
 		}
 	}
-	cout<<"Choose action "<<act_type<<". ";
+	//cout<<"Choose action "<<act_type<<". ";
 	//=======================================
 	switch(act_type)
 	{
@@ -270,7 +270,7 @@ void mc :: save_opt_structure(cell& c_new)
 	for(size_t t1=0; t1<c_new.num_atm; t1++)
 		opt_e -= c_new.atm_list[t1].ele->mu;
 	opt_c = c_new;
-	cout<<"Initialized the optimized free energy and structure"<<endl;
+	cout<<"Initialized the minimum seeker to the starting structure"<<endl;
 }
 
 int mc :: if_accept(cell& c_old, cell& c_new)

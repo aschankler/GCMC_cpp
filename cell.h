@@ -34,9 +34,11 @@ public:
 	// volume of cell
 	double vol;
 
-	// function relying on external files
+	// io related function
 	void read_from_in(std::ifstream& in);
 	void read_from_qe(std::ifstream& in);
+	void write_axsf(std::ofstream& out);
+	void write_axsf(std::ofstream& out,int iter);
 
 	// self-opearted functions
 	void count_move_atoms();

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <cstring>
@@ -88,36 +89,97 @@ void cell :: read_from_in(ifstream& in)
 
 void cell :: read_from_qe(ifstream& in)
 {
+	string label_num_atm = "number of atoms/cell";
+	string label_force = "Forces acting on atoms";
+	string label_position = "ATOMIC_POSITIONS";
+	string label_energy = "!    total energy";
 	string label_final_energy = "Final energy";
-	string label_final_position = "Begin final coordinates";
+	//string label_final_position = "Begin final coordinates";
 	string tmp;
 	stringstream ss;
+	int num_tmp;
+
+	// check number of atoms matches
 	getline(in,tmp);
-	// find final status
+	while(tmp.find(label_num_atm) == string::npos)
+		getline(in,tmp);
+	ss<<(tmp); getline(ss,tmp,'='); ss>>num_tmp;
+	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
+	if(num_tmp != num_atm)
+	{
+		cout<<"Error: Number of atoms in qe.out does not match record"<<endl;
+		exit(EXIT_FAILURE);
+	}
+	// find number of iteration
+	for(num_tmp=0; !in.eof(); getline(in,tmp))
+		if (tmp.find(label_energy) != string::npos)
+			num_tmp++;
+	in.clear(); in.seekg(ios::beg);
+	// check if SCF converges
+	if (num_tmp == 0)
+	{
+		cout<<"Warning: SCF does not converge, set energy and force to 0 Ry"<<endl;
+		energy = 0;
+		for(size_t t1=0; t1<num_atm; t1++)
+			atm_list[t1].force = atm_list[t1].force * 0;
+		in.clear(); in.seekg(ios::beg);
+		return;
+	}
+	// save enrgy, forces and positions
+	for(size_t t1=0; t1<num_tmp;)
+	{
+		getline(in,tmp);
+		if (tmp.find(label_energy) != string::npos)
+			t1++;
+	}
+	// energy
+	ss<<(tmp); getline(ss,tmp,'='); ss>>energy;
+	ss.str(""); ss.clear(); 
+	// forces
+	while(tmp.find(label_force) == string::npos)
+		getline(in,tmp);
+	getline(in,tmp);
+	for(size_t t1=0; t1<num_atm; t1++)
+	{
+		getline(in,tmp,'=');
+		in>>atm_list[t1].force;
+		getline(in,tmp);
+	}
+	// position
+	while(tmp.find(label_position) == string::npos)
+		getline(in,tmp);
+	for(size_t t1=0; t1<num_atm; t1++)
+	{
+		in>>tmp>>atm_list[t1].pos;
+		getline(in,tmp);
+	}
+	// check if relax converged
+	in.clear(); in.seekg(ios::beg);
 	while(tmp.find(label_final_energy) == string::npos && !in.eof())
 		getline(in,tmp);
-	if (! in.eof())
+	if(in.eof())
+		cout<<"Warning: Structure not fully relaxed"<<endl;
+	in.clear(); in.seekg(ios::beg);
+}
+
+void cell :: write_axsf(ofstream& out)
+{
+	out<<"ANIMSTEPS 10000"<<endl;
+	out<<"CRYSTAL"<<endl;
+	out<<"PRIMVEC"<<endl;
+	out<<latt[0]<<endl;
+	out<<latt[1]<<endl;
+	out<<latt[2]<<endl;
+}
+
+void cell :: write_axsf(ofstream& out,int iter)
+{
+	out<<"PRIMCOORD "<<iter<<endl;
+	out<<num_atm<<" 1"<<endl;
+	for(size_t t1=0; t1<num_atm; t1++)
 	{
-		// save final energy
-		ss << (tmp);
-		getline(ss,tmp,'=');
-		ss >> energy;
-		ss.str(""); ss.clear();
-		// save final postion
-		while(tmp.find(label_final_position) == string::npos)
-			getline(in,tmp);
-		getline(in,tmp);
-		getline(in,tmp);
-		for (size_t t1=0; t1<num_atm; t1++)
-		{
-			in>>tmp>>atm_list[t1].pos;
-			getline(in,tmp);
-		}
-	}
-	else
-	{
-		cout<<"Warning: QE calculation does not converge, set energy to 0 Ry"<<endl;
-		energy = 0;
+		out<<setw(2)<<atm_list[t1].ele->sym;
+		out<<atm_list[t1].pos<<atm_list[t1].force<<endl;
 	}
 }
 
@@ -174,6 +236,10 @@ void cell :: sp_atom(int s1, int s2)
 	tmp = atm_list[s1].pos;
 	atm_list[s1].pos = atm_list[s2].pos;
 	atm_list[s2].pos = tmp;
+
+	tmp = atm_list[s1].force;
+	atm_list[s1].force = atm_list[s2].force;
+	atm_list[s2].force = tmp;
 }
 
 void cell :: update_tb(double T)

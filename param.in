@@ -10,7 +10,7 @@ temperature  = 500
 if_test      = 1
 
 begin_action_probability (add remove swap)
-3.0 5.0 2.0
+1.0 1.0 20.0
 
 h_min = 0
 h_max = 9.0
@@ -40,7 +40,7 @@ begin_qe_input
   pseudo_dir        = './'
   outdir            = './'
   prefix            = 'GCMC'
-  nstep             = 4000
+  nstep             = 100
   forc_conv_thr     = 1.d-6
   etot_conv_thr     = 1.d-8
   verbosity         = 'high'
@@ -69,7 +69,7 @@ begin_qe_input
   mixing_mode       = 'local-TF'
   mixing_beta       = 0.7
   conv_thr          = 1.0e-10
-  electron_maxstep  = 500
+  electron_maxstep  = 100
 ! startingpot       = 'file'
 ! startingwfc       = 'file'
   diagonalization   = 'david'
