@@ -96,7 +96,7 @@ void qe_cmd :: call(int if_test)
 	stringstream ss;
 	string tmp;
 	if (if_test)
-		ss<<mpi_launcher<<" -n "<<num_core<<" echo '    Testing'";
+		ss<<"mpirun"<<" -n "<<num_core<<" echo '    Testing'";
 	else
 		ss<<mpi_launcher<<" -n "<<num_core<<" "<<qe_exe<<" -npool "<<npool<<" -ndiag "<<ndiag<<" -input qe.in > qe.out";
 	tmp = ss.str();

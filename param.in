@@ -1,8 +1,7 @@
-num_core     = 2
-npool        = 3
+num_core     = 16
+npool        = 1
 ndiag        = 16
-qe_launcher  = "./pw.x"
-mpi_launcher = "mpirun"
+qe_launcher  = "pw.x"
 mpi_launcher = "srun --cpu_bind=cores -c 2"
 
 max_iter     = 10
@@ -12,27 +11,30 @@ if_test      = 1
 begin_action_probability (add remove swap)
 1.0 1.0 1.0
 
-h_min = 0
-h_max = 9.0
+h_min = 6
+h_max = 15
 
-num_ele = 3
-num_atm = 4
+num_ele = 2
+num_atm = 8
 
 begin_elements (element mass mu r_min r_max add_p)
-He 2   0.001 2 3  1.0
-Ne 8   0.001 2 3  1.0
-Ar 18  0.001 2 3  1.0
+Na  22.990  -1196.2733922  1.0  3.0  0.5
+Sb  121.76  -2119.4243232  2.0  3.0  0.5
 
 begin_lattice
-6 0 0
--0.6 6 0
-0 0 15
+5.314320151    0.000000000    0.000000000
+-2.657160075    4.602336255    0.000000000
+0.000000000    0.000000000    22.0
 
 begin_atom_positions
-He 1 1 1 0
-Ar 2 2 2 1
-Ar 3 3 3 0
-Ne 4 4 4 1
+Na     0.000000000    3.068224167    8.654790619 1
+Na     2.657160073    1.534112083    3.931576013 1
+Na     0.000000000    0.000000000    2.353489036 1
+Na     0.000000000    0.000000000    7.078432691 1
+Na     0.000000000    3.068224167    5.500345714 1
+Na     2.657160073    1.534112083    0.777131108 0
+Sb     2.657160073    1.534112083    7.058538401 1
+Sb     0.000000000    3.068224167    2.373383326 1
 
 begin_qe_input
 &CONTROL
@@ -41,8 +43,8 @@ begin_qe_input
   outdir            = './'
   prefix            = 'GCMC'
   nstep             = 100
-  forc_conv_thr     = 1.d-6
-  etot_conv_thr     = 1.d-8
+  forc_conv_thr     = 1.d-3
+  etot_conv_thr     = 1.d-4
   verbosity         = 'high'
   tprnfor           = .TRUE.
   tstress           = .TRUE.
@@ -59,7 +61,7 @@ begin_qe_input
   smearing          = 'gaussian'
   degauss           = 0.001
   nat               =
-  ntyp              = 3
+  ntyp              = 2
 ! lspinorb          = .TRUE.
 ! nbnd              = 36
 ! nosym             = .TRUE.
@@ -68,7 +70,7 @@ begin_qe_input
 &ELECTRONS 
   mixing_mode       = 'local-TF'
   mixing_beta       = 0.7
-  conv_thr          = 1.0e-10
+  conv_thr          = 1.0e-5
   electron_maxstep  = 100
 ! startingpot       = 'file'
 ! startingwfc       = 'file'
@@ -89,23 +91,8 @@ begin_qe_input
 /
 
 ATOMIC_SPECIES
-Na  22.98   na.upf   
-Zn  65.38   zn.upf
-Sb  121.76  sb.upf
+Na  22.990  na_srl_gga.upf
+Sb  121.76  sb_frl_gga.upf
 
-K_POINTS (automatic)
-8 8 8 0 0 0
+K_POINTS (gamma)
 end_qe_input
-
-CELL_PARAMETERS (angstrom)
-   4.571961955   0.001727263   0.000000891
-  -2.287290760   3.958679109   0.000000925
-  -0.000001419  -0.000002522   7.345719642
-
-ATOMIC_POSITIONS (crystal)
-Na       1.000017664  -0.000017613   1.011535183
-Na      -0.000017613   1.000017643   0.511535554
-Zn       0.333334667   0.666665167   0.691670440
-Zn       0.666665328   0.333334835   0.191671815
-Sb       0.333327065   0.666672975   0.296794706
-Sb       0.666672843   0.333326939   0.796792283
