@@ -18,6 +18,7 @@ private:
 	int if_move;
 friend cell;
 friend mc;
+friend qe_cmd;
 public:
 	void line_from_in(std::stringstream& ss, vector<element>& ele_list);
 	void line_from_qe(std::stringstream& ss, vector<element>& ele_list);

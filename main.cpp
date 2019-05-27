@@ -6,6 +6,7 @@
 #include "element.h"
 #include "cell.h"
 #include "mc.h"
+#include "qe_cmd.h"
 
 using namespace std;
 
@@ -13,10 +14,14 @@ int main()
 {
 	srand(time(0));
 	ifstream input, qe_out;
-	input.open("in.dat");
-	qe_out.open("t.out");
+	ofstream qe_in;
+	input.open("param.in");
+	qe_in.open("qe.in");
+	qe_out.open("qe.out");
 	cell sys1, sys2;
 	mc run1;
+	qe_cmd qe_control;
+
 	double pos0[3]={1.1,2.2,3.3}, rr;
 	int ind;
 	vec pos1;
@@ -24,6 +29,7 @@ int main()
 	
 	run1.read_from_in(input);
 	sys1.read_from_in(input);
+	qe_control.read_from_in(input);
 	sys1.count_move_atoms();
 	sys1.get_volume();
 	sys1.update_tb(run1.T);
@@ -39,12 +45,15 @@ int main()
 			sys1 = sys2;
 		cout<<"----------------"<<endl;
 	}
-	/*
-	sys2.rm_atom(4);
-	sys2.sp_atom(0,6);
-	*/
 	sys1.print();
 	cout<<"----------------"<<endl;
 	sys2.print();
+	cout<<"----------------"<<endl;
+	qe_control.write_qe_in(input,qe_in,sys2);
+	//qe_control.call(run1.if_test);
+
+	input.close();
+	qe_in.close();
+	qe_out.close();
 	return 0;
 }

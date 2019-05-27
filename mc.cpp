@@ -288,99 +288,84 @@ int mc :: if_accept(cell& c_old, cell& c_new)
 		e2 -= c_new.atm_list[t1].ele->mu;
 	//==============================================
 	cout<<"Evaluating whether to accept new structure"<<endl;
-	if (if_test)
+	switch (num_change)
 	{
-		cout<<"    Testing mode, randomly select to accept or reject"<<endl;
-	}
-	else
-	{
-		switch (num_change)
+		//---------------------------------------
+		// swap
+		case 0:
 		{
-			//---------------------------------------
-			// swap
-			case 0:
+			exp_main = exp((e1-e2)/T/kb);
+			cout<<"    (Exp.) total factor: "<<exp_main<<'\t'<<endl;
+			if (e2 < e1)
 			{
-				exp_main = exp((e1-e2)/T/kb);
-				cout<<"    (Exp.) total factor: "<<exp_main<<'\t'<<endl;
-				if (e2 < e1)
+				accept = 1;
+				cout<<"    Accepted, new structure has lower formation energy"<<endl;
+				if (e2 < opt_e)
 				{
-					accept = 1;
-					cout<<"    Accepted, new structure has lower formation energy"<<endl;
-					if (e2 < opt_e)
-					{
-						opt_e = e2;
-						opt_c = c_new;
-						cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
-					}
+					opt_e = e2;
+					opt_c = c_new;
+					cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
 				}
-				else if ((double)rand()/RAND_MAX < exp((e1-e2)/T/kb))
-				{
-					accept = 1;
-					cout<<"    Accepted, but new structure has higher formation energy"<<endl;
-				}
-				else
-				{
-					accept = 0;
-					cout<<"    Rejected"<<endl;
-				}
-				break;
 			}
-			//---------------------------------------
-			// add and remove
-			case 1:
-			case -1:
+			else if ((double)rand()/RAND_MAX < exp((e1-e2)/T/kb))
 			{
-				// calculate prefactor and exp
-				c_new.ele_list[ele_change].update_tb(T);
-				if (num_change == 1)
-					exp_pre = c_new.vol/(c_new.num_ele_each[ele_change]*pow(c_new.ele_list[ele_change].tb,3));
-				else
-					exp_pre = c_old.num_ele_each[ele_change]*pow(c_new.ele_list[ele_change].tb,3)/c_new.vol;
-				exp_main = exp((e1-e2)/T/kb);
-				cout<<"    Pre. factor: "<<exp_pre<<"    exp. factor: "<<exp_main<<"    total factor: "<<exp_pre*exp_main<<endl;
-				// start evaluating whether to accept or reject
-				if (1 < exp_pre*exp_main)
-				{
-					accept = 1;
-					cout<<"    Accepted, new structure has lower volume-factored-in formation energy"<<endl;
-					if (e2 < opt_e)
-					{
-						opt_e = e2;
-						opt_c = c_new;
-						cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
-					}
-				}
-				else if ((double)rand()/RAND_MAX < exp_pre*exp_main)
-				{
-					accept = 1;
-					cout<<"    Accepted, but new structure has highter volume-factored-in formation energy"<<endl;
-					if (e2 < opt_e)
-					{
-						opt_e = e2;
-						opt_c = c_new;
-						cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
-					}
-				}
-				else
-				{
-					cout<<"    Rejected"<<endl;
-				}
-				break;
+				accept = 1;
+				cout<<"    Accepted, but new structure has higher formation energy"<<endl;
 			}
-			//---------------------------------------
-			// remove
-			/*
-			case -1:
+			else
 			{
-				break;
+				accept = 0;
+				cout<<"    Rejected"<<endl;
 			}
-			*/
-			//---------------------------------------
-			default:
+			break;
+		}
+		//---------------------------------------
+		// add and remove
+		case 1:
+		case -1:
+		{
+			// calculate prefactor and exp
+			c_new.ele_list[ele_change].update_tb(T);
+			if (num_change == 1)
+				exp_pre = c_new.vol/(c_new.num_ele_each[ele_change]*pow(c_new.ele_list[ele_change].tb,3));
+			else
+				exp_pre = c_old.num_ele_each[ele_change]*pow(c_new.ele_list[ele_change].tb,3)/c_new.vol;
+			exp_main = exp((e1-e2)/T/kb);
+			cout<<"    Pre. factor: "<<exp_pre<<"    exp. factor: "<<exp_main<<"    total factor: "<<exp_pre*exp_main<<endl;
+			// start evaluating whether to accept or reject
+			if (1 < exp_pre*exp_main)
 			{
-				cout<<"Error: Invalid number of atoms changed: "<<num_change<<endl;
-				exit(EXIT_FAILURE);
+				accept = 1;
+				cout<<"    Accepted, new structure has lower volume-factored-in formation energy"<<endl;
+				if (e2 < opt_e)
+				{
+					opt_e = e2;
+					opt_c = c_new;
+					cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
+				}
 			}
+			else if ((double)rand()/RAND_MAX < exp_pre*exp_main)
+			{
+				accept = 1;
+				cout<<"    Accepted, but new structure has highter volume-factored-in formation energy"<<endl;
+				if (e2 < opt_e)
+				{
+					opt_e = e2;
+					opt_c = c_new;
+					cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
+				}
+			}
+			else
+			{
+				cout<<"    Rejected"<<endl;
+			}
+			break;
+		}
+		//---------------------------------------
+		default:
+		{
+			cout<<"Error: Invalid number of atoms changed: "<<num_change<<endl;
+			exit(EXIT_FAILURE);
 		}
 	}
 	cout<<"Best formation energy is "<<opt_e<<endl<<endl;

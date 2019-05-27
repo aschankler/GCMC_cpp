@@ -14,6 +14,7 @@ private:
 friend atom;
 friend cell;
 friend mc;
+friend qe_cmd;
 public:
 	void import(double *);
 	void clean();					// reset value to zero
