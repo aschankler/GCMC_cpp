@@ -125,7 +125,7 @@ void cell :: read_from_qe(ifstream& in)
 		in.clear(); in.seekg(ios::beg);
 		return;
 	}
-	// save enrgy, forces and positions
+	// save energy, forces and positions
 	for(size_t t1=0; t1<num_tmp;)
 	{
 		getline(in,tmp);
@@ -133,7 +133,7 @@ void cell :: read_from_qe(ifstream& in)
 			t1++;
 	}
 	// energy
-	ss<<(tmp); getline(ss,tmp,'='); ss>>energy;
+	ss<<(tmp); getline(ss,tmp,'='); ss>>energy; energy*=ry_ev;
 	ss.str(""); ss.clear(); 
 	// forces
 	while(tmp.find(label_force) == string::npos)

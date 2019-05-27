@@ -24,6 +24,10 @@ public:
 	double opt_e;
 	// global optimized cell
 	cell opt_c;
+	// formation energy of old and new structure
+	double e1,e2;
+	// status of if accepted or not
+	int accept;
 	// parameters
 	double ry_ev = 13.605693009;
 	double kb = 8.6173303e-5;  // ev/k
@@ -32,7 +36,7 @@ public:
 
 	void create_new_structure(cell c_old, cell& c_new);
 	void save_opt_structure(cell& c_new);
-	int if_accept(cell& c_old, cell& c_new);
+	int check_if_accept(cell& c_old, cell& c_new);
 
 	void print();
 };

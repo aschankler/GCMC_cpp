@@ -33,6 +33,8 @@ public:
 	vector<int> num_ele_each_move;
 	// volume of cell
 	double vol;
+	// parameters
+	double ry_ev = 13.605693009;
 
 	// io related function
 	void read_from_in(std::ifstream& in);

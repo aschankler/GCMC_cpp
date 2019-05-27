@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <cstring>
 #include <ctime>
@@ -13,49 +14,80 @@ using namespace std;
 int main()
 {
 	srand(time(0));
+	// input and output files
 	ifstream input, qe_out;
-	ofstream qe_in, trial_axsf;
-	cell sys1, sys2;
-	mc run1;
+	ofstream qe_in, log, opt_axsf, accept_axsf, trial_axsf;
+	// define of system
+	cell sys_accept, sys_trial;
+	mc mc_control;
 	qe_cmd qe_control;
-	double pos0[3]={1.1,2.2,3.3}, rr;
-	int ind;
-	vec pos1;
-	pos1=&pos0[0];
-	
+
+	// read parameter file
 	input.open("param.in");
-	qe_in.open("qe.in");
-	qe_out.open("qe.out");
-	trial_axsf.open("trial.axsf");
-
-	run1.read_from_in(input);
-	sys1.read_from_in(input);
+	sys_accept.read_from_in(input);
+	mc_control.read_from_in(input);
 	qe_control.read_from_in(input);
-	sys1.count_move_atoms();
-	sys1.get_volume();
-	sys1.update_tb(run1.T);
-	sys1.read_from_qe(qe_out);
-	sys1.ad_atom(pos1,0);
 
-	run1.save_opt_structure(sys1);
-	sys1.write_axsf(trial_axsf);
-	for (size_t t1=0; t1<run1.max_iter; t1++)
+	// initialize cell
+	sys_accept.count_move_atoms();
+	sys_accept.get_volume();
+	sys_accept.update_tb(mc_control.T);
+	
+	// run first QE
+	cout<<"==============Begin iteration"<<setw(5)<<1<<"=============="<<endl;
+	qe_in.open("qe.in"); qe_control.write_qe_in(input,qe_in,sys_accept); qe_in.close();
+	qe_control.call(mc_control.if_test);
+	qe_out.open("qe.out"); sys_accept.read_from_qe(qe_out); qe_out.close();
+	opt_axsf.open("save_opt.axsf");
+	accept_axsf.open("save_accept.axsf");
+	trial_axsf.open("save_trial.axsf");
+	sys_accept.write_axsf(opt_axsf);
+	sys_accept.write_axsf(accept_axsf);
+	sys_accept.write_axsf(trial_axsf);
+	sys_accept.write_axsf(opt_axsf,1);
+	sys_accept.write_axsf(accept_axsf,1);
+	sys_accept.write_axsf(trial_axsf,1);
+
+	// initialize mc
+	mc_control.save_opt_structure(sys_accept);
+
+	// start mc iteration
+	log.open("log.dat");
+	log<<setw(9)<<"Iteration"<<setw(20)<<"DFT_E"<<setw(20)<<"Trial_E_f"<<setw(20)<<"Previous_E_f"<<setw(20)<<"Accept_E_f"<<setw(20)<<"Optimal_E_f"<<setw(14)<<"If_accept"<<endl;
+	log<<setw(9)<<1<<fixed<<setprecision(9)<<setw(20)<<sys_accept.energy<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(14)<<1<<endl;
+	cout<<"================================================"<<endl<<endl;
+	for(size_t iter=2; iter<=mc_control.max_iter; iter++)
 	{
-		run1.create_new_structure(sys1,sys2);
-		sys2.energy += ((double)rand()/RAND_MAX - 0.5)*0.1;
-		if (run1.if_accept(sys1,sys2))
-			sys1 = sys2;
-		cout<<"----------------"<<endl;
-		sys2.write_axsf(trial_axsf,t1+1);
+		cout<<"==============Begin iteration"<<setw(5)<<iter<<"=============="<<endl;
+		// create new structure
+		mc_control.create_new_structure(sys_accept,sys_trial);
+		qe_in.open("qe.in"); qe_control.write_qe_in(input,qe_in,sys_trial); qe_in.close();
+		// run QE
+		qe_control.call(mc_control.if_test);
+		// read QE result
+		if (!mc_control.if_test)
+		{
+			qe_out.open("qe.out"); sys_trial.read_from_qe(qe_out); qe_out.close();
+		}
+		else
+		{
+			sys_trial.energy += ((double)rand()/RAND_MAX - 0.5)*0.1;
+		}
+		// check if accept new structure
+		if (mc_control.check_if_accept(sys_accept,sys_trial))
+		{
+			sys_accept = sys_trial;
+			log<<setw(9)<<iter<<fixed<<setprecision(9)<<setw(20)<<sys_trial.energy<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.opt_e<<setw(14)<<1<<endl;
+		}
+		else
+		{
+			log<<setw(9)<<iter<<fixed<<setprecision(9)<<setw(20)<<sys_trial.energy<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.opt_e<<setw(14)<<0<<endl;
+		}
+		// write to axsf file
+		mc_control.opt_c.write_axsf(opt_axsf,iter);
+		sys_accept.write_axsf(accept_axsf,iter);
+		sys_trial.write_axsf(trial_axsf,iter);
+		cout<<"================================================"<<endl<<endl;
 	}
-	cout<<"----------------"<<endl;
-	sys2.print();
-	qe_control.write_qe_in(input,qe_in,sys2);
-	//qe_control.call(run1.if_test);
-
-	input.close();
-	qe_in.close();
-	qe_out.close();
-	trial_axsf.close();
 	return 0;
 }

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <cstring>
@@ -261,33 +262,30 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 			exit(EXIT_FAILURE);
 		}
 	}
-	cout<<endl;
 }
 
 void mc :: save_opt_structure(cell& c_new)
 {
-	opt_e = c_new.energy*ry_ev;
+	opt_e = c_new.energy;
 	for(size_t t1=0; t1<c_new.num_atm; t1++)
 		opt_e -= c_new.atm_list[t1].ele->mu;
 	opt_c = c_new;
 	cout<<"Initialized the minimum seeker to the starting structure"<<endl;
 }
 
-int mc :: if_accept(cell& c_old, cell& c_new)
+int mc :: check_if_accept(cell& c_old, cell& c_new)
 {
-	int accept=0;
-	double e1, e2;
 	double exp_pre, exp_main;
 
 	// calculate formation energy
-	e1 = c_old.energy * ry_ev;
-	e2 = c_new.energy * ry_ev;
+	e1 = c_old.energy;
+	e2 = c_new.energy;
 	for(size_t t1=0; t1<c_old.num_atm; t1++)
 		e1 -= c_old.atm_list[t1].ele->mu;
 	for(size_t t1=0; t1<c_new.num_atm; t1++)
 		e2 -= c_new.atm_list[t1].ele->mu;
 	//==============================================
-	cout<<"Evaluating whether to accept new structure"<<endl;
+	cout<<endl<<"Evaluating whether to accept new structure"<<endl;
 	switch (num_change)
 	{
 		//---------------------------------------
@@ -368,7 +366,7 @@ int mc :: if_accept(cell& c_old, cell& c_new)
 			exit(EXIT_FAILURE);
 		}
 	}
-	cout<<"Best formation energy is "<<opt_e<<endl<<endl;
+	cout<<"Best formation energy is "<<setw(20)<<setprecision(9)<<opt_e<<endl;
 	return accept;
 }
 

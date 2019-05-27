@@ -1,16 +1,16 @@
-num_core     = 4
+num_core     = 2
 npool        = 3
 ndiag        = 16
 qe_launcher  = "./pw.x"
 mpi_launcher = "mpirun"
 mpi_launcher = "srun --cpu_bind=cores -c 2"
 
-max_iter     = 1
+max_iter     = 10
 temperature  = 500
 if_test      = 1
 
 begin_action_probability (add remove swap)
-1.0 1.0 20.0
+1.0 1.0 1.0
 
 h_min = 0
 h_max = 9.0
@@ -19,7 +19,7 @@ num_ele = 3
 num_atm = 4
 
 begin_elements (element mass mu r_min r_max add_p)
-He 2  -1.0   2 3  1.0
+He 2   0.001 2 3  1.0
 Ne 8   0.001 2 3  1.0
 Ar 18  0.001 2 3  1.0
 
