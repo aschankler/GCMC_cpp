@@ -32,7 +32,7 @@ int main()
 	sys_accept.count_move_atoms();
 	sys_accept.get_volume();
 	sys_accept.update_tb(mc_control.T);
-	
+
 	// run first QE
 	cout<<"==============Begin iteration"<<setw(5)<<1<<"=============="<<endl;
 	qe_in.open("qe.in"); qe_control.write_qe_in(input,qe_in,sys_accept); qe_in.close();
@@ -71,7 +71,7 @@ int main()
 		}
 		else
 		{
-			sys_trial.energy += ((double)rand()/RAND_MAX - 0.5)*0.1;
+			sys_trial.energy += ((double)rand()/RAND_MAX - 0.5)*0.0;
 		}
 		// check if accept new structure
 		if (mc_control.check_if_accept(sys_accept,sys_trial))
