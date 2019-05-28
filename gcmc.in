@@ -1,4 +1,4 @@
-num_core     = 36
+num_core     = 2
 npool        = 1
 ndiag        = 36
 qe_launcher  = "pw.x"
