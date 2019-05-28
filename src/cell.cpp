@@ -187,17 +187,48 @@ void cell :: count_move_atoms()
 {
 	num_ele_each.resize(num_ele);
 	num_ele_each_move.resize(num_ele);
+	num_ele_each_remove.resize(num_ele);
 	num_atm_move = 0;
+	num_atm_remove = 0;
 	for(size_t t1=0; t1<num_ele; t1++)
 	{
 		num_ele_each[t1] = 0;
 		num_ele_each_move[t1] = 0;
+		num_ele_each_remove[t1] = 0;
 	}
+	// start counting
 	for(size_t t1=0; t1<num_atm; t1++)
 	{
-		num_atm_move += atm_list[t1].if_move;
 		num_ele_each[atm_list[t1].type]++;
-		num_ele_each_move[atm_list[t1].type] += atm_list[t1].if_move;
+		switch(atm_list[t1].if_move)
+		{
+			// not movable
+			case 0:
+			{
+				break;
+			}
+			// movable not removable
+			case 1:
+			{
+				num_atm_move++;
+				num_ele_each_move[atm_list[t1].type]++;
+				break;
+			}
+			// all free
+			case 2:
+			{
+				num_atm_move++;
+				num_atm_remove++;
+				num_ele_each_move[atm_list[t1].type]++;
+				num_ele_each_remove[atm_list[t1].type]++;
+				break;
+			}
+			default:
+			{
+				cout<<"Error: Atom "<<t1+1<<' '<<atm_list[t1].ele->sym<<" does not have a vaild (re)movable flag"<<endl;
+				exit(EXIT_FAILURE);
+			}
+		}
 	}
 }
 
@@ -217,7 +248,7 @@ void cell :: ad_atom(vec pos, int ele_type)
 	tmp.ele = &ele_list[ele_type];
 	tmp.pos = pos;
 	tmp.force = pos*0;
-	tmp.if_move = 1;
+	tmp.if_move = 2;
 	atm_list.push_back(tmp);
 	num_atm++;
 	count_move_atoms();
@@ -225,6 +256,11 @@ void cell :: ad_atom(vec pos, int ele_type)
 
 void cell :: rm_atom(int ind_atm)
 {
+	if (atm_list[ind_atm].if_move <= 1)
+	{
+		cout<<"Error: Can not remove atom "<<ind_atm+1<<' '<<atm_list[ind_atm].ele->sym<<", not removable"<<endl;
+		exit(EXIT_FAILURE);
+	}
 	atm_list.erase(atm_list.begin() + ind_atm);
 	num_atm--;
 	count_move_atoms();
@@ -273,10 +309,14 @@ void cell :: print()
 	cout<<"Threshold of height: "<<h_min<<", "<<h_max<<endl;
 	cout<<"Energy: "<<energy<<endl;
 	cout<<"Volume: "<<vol<<endl;
+	cout<<"Total removable atoms: "<<num_atm_remove<<endl;
 	cout<<"Total movable atoms: "<<num_atm_move<<endl;
 	cout<<"Atoms per elements: "<<endl;
 	for(size_t t1=0; t1<num_ele; t1++)
 		cout<<ele_list[t1].sym<<'\t'<<num_ele_each[t1]<<endl;
+	cout<<"Reovable atoms per elements: "<<endl;
+	for(size_t t1=0; t1<num_ele; t1++)
+		cout<<ele_list[t1].sym<<'\t'<<num_ele_each_remove[t1]<<endl;
 	cout<<"Movable atoms per elements: "<<endl;
 	for(size_t t1=0; t1<num_ele; t1++)
 		cout<<ele_list[t1].sym<<'\t'<<num_ele_each_move[t1]<<endl;

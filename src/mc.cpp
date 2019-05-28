@@ -68,6 +68,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 	double r_tmp;
 	double add_p_sum;
 	// for exam remove and swap
+	int num_removable_ele;
 	int num_movable_ele;
 	// for determin which action to take
 	int act_type;
@@ -117,8 +118,27 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 	else
 		tmp_p[0] = 0;
 	//---------------------------------------
-	// check for remove and swap
-	if (act_p[1] > 0 || act_p[2] > 0)
+	// check for remove
+	if (act_p[1] > 0)
+	{
+		num_removable_ele = 0;
+		for (size_t t1=0; t1<c_new.num_ele; t1++)
+		{
+			if (c_new.num_ele_each_remove[t1] > 0)
+				num_removable_ele++;
+		}
+		if (num_removable_ele >= 1)
+			tmp_p[1] = act_p[1];
+		else
+		{
+			tmp_p[1] = 0;
+			cout<<"    Can not find removable elements, weight of choosing to remove set to 0"<<endl;
+		}
+	}
+	else
+		tmp_p[1] = 0;
+	// check for swap
+	if (act_p[2] > 0)
 	{
 		num_movable_ele = 0;
 		for (size_t t1=0; t1<c_new.num_ele; t1++)
@@ -127,29 +147,15 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 				num_movable_ele++;
 		}
 		if (num_movable_ele >= 2)
-		{
-			tmp_p[1] = act_p[1];
 			tmp_p[2] = act_p[2];
-		}
-		else if (num_movable_ele >= 1)
-		{
-			tmp_p[1] = act_p[1];
-			tmp_p[2] = 0;
-			cout<<"    Can not find more than one removable elements, weight of choosing to swap is set to 0"<<endl;
-		}
 		else
 		{
-			tmp_p[1] = 0;
 			tmp_p[2] = 0;
-			cout<<"    Can not find removable elements, weight of choosing to swap is set to 0"<<endl;
-			cout<<"    Can not find more than one removable elements, weight of choosing to swap is set to 0"<<endl;
+			cout<<"    Can not find more than one movable elements, weight of choosing to swap is set to 0"<<endl;
 		}
 	}
 	else
-	{
-		tmp_p[1] = 0;
 		tmp_p[2] = 0;
-	}
 	cout<<"    New weight of each action is:"<<endl;
 	cout<<"    Add: "<<tmp_p[0]<<"    Remove: "<<tmp_p[1]<<"    Swap: "<<tmp_p[2]<<endl;
 	cout<<"End adjust weight of actions"<<endl<<endl;
@@ -197,16 +203,16 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 		// remove
 		case 1:
 		{
-			// find which (removable) atom to remove
-			atm_id_tmp = rand()%c_new.num_atm_move;
+			// find which removable atom to remove
+			atm_id_tmp = rand()%c_new.num_atm_remove;
 			for(size_t t1=0; t1<c_new.num_atm; t1++)
 			{
-				if(atm_id_tmp == 0 && c_new.atm_list[t1].if_move == 1)
+				if(atm_id_tmp == 0 && c_new.atm_list[t1].if_move == 2)
 				{
 					atm_id_tmp = t1;
 					break;
 				}
-				else if (c_new.atm_list[t1].if_move == 1)
+				else if (c_new.atm_list[t1].if_move == 2)
 				{
 					atm_id_tmp--;
 				}
@@ -225,12 +231,12 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 			atm_id_tmp = rand()%c_new.num_atm_move;
 			for(size_t t1=0; t1<c_new.num_atm; t1++)
 			{
-				if(atm_id_tmp == 0 && c_new.atm_list[t1].if_move == 1)
+				if(atm_id_tmp == 0 && c_new.atm_list[t1].if_move >= 1)
 				{
 					atm_id_tmp = t1;
 					break;
 				}
-				else if (c_new.atm_list[t1].if_move == 1)
+				else if (c_new.atm_list[t1].if_move >= 1)
 				{
 					atm_id_tmp--;
 				}
@@ -239,12 +245,12 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 			atm_id_tmp2 = rand()%(c_new.num_atm_move - c_new.num_ele_each_move[c_new.atm_list[atm_id_tmp].type]);
 			for(size_t t1=0; t1<c_new.num_atm; t1++)
 			{
-				if(atm_id_tmp2 == 0 && c_new.atm_list[t1].if_move == 1 && c_new.atm_list[t1].type != c_new.atm_list[atm_id_tmp].type)
+				if(atm_id_tmp2 == 0 && c_new.atm_list[t1].if_move >= 1 && c_new.atm_list[t1].type != c_new.atm_list[atm_id_tmp].type)
 				{
 					atm_id_tmp2 = t1;
 					break;
 				}
-				else if (c_new.atm_list[t1].if_move == 1 && c_new.atm_list[t1].type != c_new.atm_list[atm_id_tmp].type)
+				else if (c_new.atm_list[t1].if_move >= 1 && c_new.atm_list[t1].type != c_new.atm_list[atm_id_tmp].type)
 				{
 					atm_id_tmp2--;
 				}

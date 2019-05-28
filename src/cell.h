@@ -26,11 +26,11 @@ public:
 	// energy of cell
 	double energy;
 	// number of movable atoms
-	int num_atm_move;
+	int num_atm_move, num_atm_remove;
 	// number of atoms belonging each element
 	vector<int> num_ele_each;
 	// number of movable atoms belonging each element
-	vector<int> num_ele_each_move;
+	vector<int> num_ele_each_move, num_ele_each_remove;
 	// volume of cell
 	double vol;
 	// parameters
