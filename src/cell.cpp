@@ -15,6 +15,7 @@ void cell :: read_from_in(ifstream& in)
 	string label_num_atm = "num_atm";
 	string label_h_min = "h_min";
 	string label_h_max = "h_max";
+	string label_if_vc_relax = "if_vc_relax";
 	string label_ele = "begin_elements";
 	string label_lat = "begin_lattice";
 	string label_atm = "begin_atom_positions";
@@ -50,6 +51,14 @@ void cell :: read_from_in(ifstream& in)
 		getline(in,tmp);
 	ss << (tmp);
 	getline(ss,tmp,'='); ss >> h_max;
+	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
+	
+	// get if vc-relax
+	getline(in,tmp);
+	while(tmp.find(label_if_vc_relax) == string::npos)
+		getline(in,tmp);
+	ss << (tmp);
+	getline(ss,tmp,'='); ss >> if_vc_relax;
 	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
 
 	// generate element list
@@ -91,9 +100,11 @@ void cell :: read_from_qe(ifstream& in)
 {
 	string label_num_atm = "number of atoms/cell";
 	string label_force = "Forces acting on atoms";
+	string label_cell = "CELL_PARAMETERS";
 	string label_position = "ATOMIC_POSITIONS";
 	string label_energy = "!    total energy";
 	string label_final_energy = "Final energy";
+	string label_final_enthalpy = "Final enthalpy";
 	//string label_final_position = "Begin final coordinates";
 	string tmp;
 	stringstream ss;
@@ -112,7 +123,7 @@ void cell :: read_from_qe(ifstream& in)
 	}
 	// find number of iteration
 	for(num_tmp=0; !in.eof(); getline(in,tmp))
-		if (tmp.find(label_energy) != string::npos)
+		if (tmp.find(label_position) != string::npos)
 			num_tmp++;
 	in.clear(); in.seekg(ios::beg);
 	// check if SCF converges
@@ -125,7 +136,7 @@ void cell :: read_from_qe(ifstream& in)
 		in.clear(); in.seekg(ios::beg);
 		return;
 	}
-	// save energy, forces and positions
+	// save energy, forces, (cell parameters), and positions
 	for(size_t t1=0; t1<num_tmp;)
 	{
 		getline(in,tmp);
@@ -145,6 +156,17 @@ void cell :: read_from_qe(ifstream& in)
 		in>>atm_list[t1].force;
 		getline(in,tmp);
 	}
+	// cell parameters
+	if (if_vc_relax)
+	{
+		while(tmp.find(label_cell) == string::npos)
+			getline(in,tmp);
+		for(size_t t1=0; t1<3; t1++)
+		{
+			in>>latt[t1];
+			getline(in,tmp);
+		}
+	}
 	// position
 	while(tmp.find(label_position) == string::npos)
 		getline(in,tmp);
@@ -155,7 +177,7 @@ void cell :: read_from_qe(ifstream& in)
 	}
 	// check if relax converged
 	in.clear(); in.seekg(ios::beg);
-	while(tmp.find(label_final_energy) == string::npos && !in.eof())
+	while(tmp.find(label_final_energy) == string::npos && tmp.find(label_final_enthalpy) == string::npos && !in.eof())
 		getline(in,tmp);
 	if(in.eof())
 		cout<<"Warning: Structure not fully relaxed"<<endl;
@@ -237,7 +259,10 @@ double cell :: get_volume()
 	double h[3]={0,0,h_max-h_min};
 	vec hh;
 	hh=&h[0];
-	vol = (latt[0]^latt[1])*hh;
+	if (if_vc_relax)
+		vol = (latt[0]^latt[1])*latt[2];
+	else
+		vol = (latt[0]^latt[1])*hh;
 	return vol;
 }
 

@@ -58,7 +58,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 {
 	c_new = c_old;
 	double tmp_p[3];
-	// for exam add
+	// for examine add
 	int num_trial = 10000;
 	vec pos_add;
 	int ele_type_add;
@@ -104,10 +104,11 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 			atm_tmp = c_new.atm_list[atm_id_tmp];
 			pos_add = atm_tmp.pos + pos_add.rand_norm()*(ele_tmp.r_min + (double)rand()/RAND_MAX*(ele_tmp.r_max - ele_tmp.r_min));
 			c_new.min_distance(pos_add, r_tmp, atm_id_tmp);
-			if (r_tmp>ele_tmp.r_min && r_tmp<ele_tmp.r_max && pos_add.x[2] > c_new.h_min && pos_add.x[2] < c_new.h_max)
+			// if do vc-relax, then only need to satisfy coordination rule, otherwise new position has to be between r_min and r_max
+			if (r_tmp>ele_tmp.r_min && r_tmp<ele_tmp.r_max && (c_new.if_vc_relax || (pos_add.x[2] > c_new.h_min && pos_add.x[2] < c_new.h_max)))
 				break;
 		}
-		if (r_tmp>ele_tmp.r_min && r_tmp<ele_tmp.r_max && pos_add.x[2] > c_new.h_min && pos_add.x[2] < c_new.h_max)
+		if (r_tmp>ele_tmp.r_min && r_tmp<ele_tmp.r_max && (c_new.if_vc_relax || (pos_add.x[2] > c_new.h_min && pos_add.x[2] < c_new.h_max)))
 			tmp_p[0] = act_p[0];
 		else
 		{
@@ -195,6 +196,18 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 		{
 			ele_change = ele_type_add;
 			num_change = 1;
+			// adjust pos_add so it is in the cell
+			vec bb[3];
+			double coef_bb[3];
+			bb[0] = (c_new.latt[1]^c_new.latt[2])/((c_new.latt[1]^c_new.latt[2])*c_new.latt[0]);
+			bb[1] = (c_new.latt[2]^c_new.latt[0])/((c_new.latt[1]^c_new.latt[2])*c_new.latt[0]);
+			bb[2] = (c_new.latt[0]^c_new.latt[1])/((c_new.latt[1]^c_new.latt[2])*c_new.latt[0]);
+			for(size_t t1=0; t1<3; t1++)
+			{
+				coef_bb[t1] = pos_add*bb[t1];
+				coef_bb[t1] -= floor(coef_bb[t1]);
+			}
+			pos_add = c_new.latt[0]*coef_bb[0]+c_new.latt[1]*coef_bb[1]+c_new.latt[2]*coef_bb[2];
 			c_new.ad_atom(pos_add,ele_type_add);
 			cout<<"Atom added, +"<<c_new.num_atm<<" "<<c_new.ele_list[ele_type_add].sym<<", position is "<<pos_add<<endl;
 			break;

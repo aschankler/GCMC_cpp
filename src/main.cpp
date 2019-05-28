@@ -39,7 +39,7 @@ int main()
 	qe_control.call(mc_control.if_test);
 	if (!mc_control.if_test)
 	{
-		qe_out.open("qe.out"); sys_accept.read_from_qe(qe_out); qe_out.close();
+		qe_out.open("qe.out"); sys_accept.read_from_qe(qe_out); qe_out.close(); sys_accept.get_volume();
 	}
 	else
 	{
@@ -80,7 +80,7 @@ int main()
 		// read QE result
 		if (!mc_control.if_test)
 		{
-			qe_out.open("qe.out"); sys_trial.read_from_qe(qe_out); qe_out.close();
+			qe_out.open("qe.out"); sys_trial.read_from_qe(qe_out); qe_out.close(); sys_trial.get_volume();
 		}
 		else
 		{

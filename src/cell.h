@@ -33,6 +33,8 @@ public:
 	vector<int> num_ele_each_move, num_ele_each_remove;
 	// volume of cell
 	double vol;
+	// if vc-relax
+	int if_vc_relax;
 	// parameters
 	double ry_ev = 13.605693009;
 

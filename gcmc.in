@@ -9,10 +9,11 @@ temperature  = 500
 if_test      = 1
 
 begin_action_probability (add remove swap)
-0.0 1.0 1.0
+1.0 0.0 0.0
 
 h_min = 6
 h_max = 15
+if_vc_relax = 1
 
 num_ele = 2
 num_atm = 8
