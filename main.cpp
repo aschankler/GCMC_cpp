@@ -23,7 +23,7 @@ int main()
 	qe_cmd qe_control;
 
 	// read parameter file
-	input.open("param.in");
+	input.open("gcmc.in");
 	sys_accept.read_from_in(input);
 	mc_control.read_from_in(input);
 	qe_control.read_from_in(input);
@@ -53,8 +53,14 @@ int main()
 
 	// start mc iteration
 	log.open("log.dat");
-	log<<setw(9)<<"Iteration"<<setw(20)<<"DFT_E"<<setw(20)<<"Trial_E_f"<<setw(20)<<"Previous_E_f"<<setw(20)<<"Accept_E_f"<<setw(20)<<"Optimal_E_f"<<setw(14)<<"If_accept"<<endl;
-	log<<setw(9)<<1<<fixed<<setprecision(9)<<setw(20)<<sys_accept.energy<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(14)<<1<<endl;
+	log<<setw(9)<<"Iteration";
+	for(size_t t1=0; t1<sys_accept.num_ele_f(); t1++)
+		log<<setw(4)<<sys_accept.ele_f(t1);
+	log<<setw(20)<<"DFT_E"<<setw(20)<<"Trial_E_f"<<setw(20)<<"Previous_E_f"<<setw(20)<<"Accept_E_f"<<setw(20)<<"Optimal_E_f"<<setw(14)<<"If_accept"<<endl;
+	log<<setw(9)<<1;
+	for(size_t t1=0; t1<sys_accept.num_ele_f(); t1++)
+		log<<setw(4)<<sys_accept.num_ele_each_f(t1);
+	log<<fixed<<setprecision(9)<<setw(20)<<sys_accept.energy<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(14)<<1<<endl;
 	cout<<"================================================"<<endl<<endl;
 	for(size_t iter=2; iter<=mc_control.max_iter; iter++)
 	{
@@ -77,11 +83,17 @@ int main()
 		if (mc_control.check_if_accept(sys_accept,sys_trial))
 		{
 			sys_accept = sys_trial;
-			log<<setw(9)<<iter<<fixed<<setprecision(9)<<setw(20)<<sys_trial.energy<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.opt_e<<setw(14)<<1<<endl;
+			log<<setw(9)<<iter;
+			for(size_t t1=0; t1<sys_trial.num_ele_f(); t1++)
+				log<<setw(4)<<sys_trial.num_ele_each_f(t1);
+			log<<fixed<<setprecision(9)<<setw(20)<<sys_trial.energy<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.opt_e<<setw(14)<<1<<endl;
 		}
 		else
 		{
-			log<<setw(9)<<iter<<fixed<<setprecision(9)<<setw(20)<<sys_trial.energy<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.opt_e<<setw(14)<<0<<endl;
+			log<<setw(9)<<iter;
+			for(size_t t1=0; t1<sys_trial.num_ele_f(); t1++)
+				log<<setw(4)<<sys_trial.num_ele_each_f(t1);
+			log<<fixed<<setprecision(9)<<setw(20)<<sys_trial.energy<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.opt_e<<setw(14)<<0<<endl;
 		}
 		// write to axsf file
 		mc_control.opt_c.write_axsf(opt_axsf,iter);

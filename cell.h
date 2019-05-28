@@ -55,6 +55,11 @@ public:
 	void update_tb(double T);
 	void min_distance(vec pos, double& rr, int& ind);
 
+	// access member
+	int num_ele_f() {return num_ele;}
+	int num_atm_f() {return num_atm;}
+	string ele_f(int n) {return ele_list[n].sym;}
+	int num_ele_each_f(int n) {return num_ele_each[n];}
 	void print();
 };
 

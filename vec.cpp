@@ -94,8 +94,7 @@ std::istream& operator>>(std::istream& in, vec &B)
 
 std::ostream& operator<<(std::ostream& out, vec B)
 {
-    //out<<B.x[0]<<'\t'<<B.x[1]<<'\t'<<B.x[2];
-    out<<std::fixed<<std::setw(14)<<std::setprecision(9)<<B.x[0]<<std::setw(14)<<std::setprecision(9)<<B.x[1]<<std::setw(14)<<std::setprecision(9)<<B.x[2];
+    out<<B.x[0]<<'\t'<<B.x[1]<<'\t'<<B.x[2];
     return out;
 }
 

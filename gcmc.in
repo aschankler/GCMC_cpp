@@ -1,12 +1,12 @@
-num_core     = 144
+num_core     = 36
 npool        = 1
-ndiag        = 144
+ndiag        = 36
 qe_launcher  = "pw.x"
 mpi_launcher = "srun --cpu_bind=cores -c 2"
 
-max_iter     = 100
+max_iter     = 10
 temperature  = 500
-if_test      = 0
+if_test      = 1
 
 begin_action_probability (add remove swap)
 1.0 1.0 1.0
