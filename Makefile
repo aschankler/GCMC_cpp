@@ -23,6 +23,6 @@ $(ODIR)/%.o : $(SDIR)/%.cpp $(DEPS) | $(ODIR)/.
 clean:
 	rm -rf gcmc.x $(ODIR)
 clean_test:
-	rm -rf *.axsf qe.in qe.out log.dat
+	rm -rf *.axsf *.xsf qe.in qe.out log.dat
 clean_all:
-	rm -rf gcmc.x $(ODIR) *.axsf qe.in qe.out log.dat
+	rm -rf gcmc.x $(ODIR) *.axsf *.xsf qe.in qe.out log.dat

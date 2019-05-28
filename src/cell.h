@@ -43,6 +43,8 @@ public:
 	void read_from_qe(std::ifstream& in);
 	void write_axsf(std::ofstream& out);
 	void write_axsf(std::ofstream& out,int iter);
+	void write_xsf(std::ofstream& out);
+	void write_xsf(std::ofstream& out,int iter);
 
 	// self-opearted functions
 	void count_move_atoms();

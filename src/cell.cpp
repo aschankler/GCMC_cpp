@@ -205,6 +205,21 @@ void cell :: write_axsf(ofstream& out,int iter)
 	}
 }
 
+void cell :: write_xsf(ofstream& out,int iter)
+{
+	out<<"PRIMVEC"<<endl;
+	out<<latt[0]<<endl;
+	out<<latt[1]<<endl;
+	out<<latt[2]<<endl;
+	out<<"PRIMCOORD "<<iter<<endl;
+	out<<num_atm<<" 1"<<endl;
+	for(size_t t1=0; t1<num_atm; t1++)
+	{
+		out<<setw(2)<<atm_list[t1].ele->sym;
+		out<<atm_list[t1].pos<<atm_list[t1].force<<endl;
+	}
+}
+
 void cell :: count_move_atoms()
 {
 	num_ele_each.resize(num_ele);

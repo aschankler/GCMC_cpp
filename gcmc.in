@@ -4,7 +4,7 @@ ndiag        = 36
 qe_launcher  = "pw.x"
 mpi_launcher = "srun --cpu_bind=cores -c 2"
 
-max_iter     = 100
+max_iter     = 2
 temperature  = 500
 if_test      = 1
 
@@ -39,7 +39,7 @@ Sb     0.000000000    3.068224167    2.373383326 2
 
 begin_qe_input
 &CONTROL
-  calculation       = 'relax'
+  calculation       = 'vc-relax'
   pseudo_dir        = './'
   outdir            = './'
   prefix            = 'GCMC'
@@ -87,8 +87,8 @@ begin_qe_input
 
 &CELL
   cell_dynamics     = 'bfgs'
-  cell_dofree       = 'all'
-  press_conv_thr    = 0.002
+  cell_dofree       = 'shape'
+  press_conv_thr    = 0.01
 /
 
 ATOMIC_SPECIES

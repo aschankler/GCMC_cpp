@@ -16,7 +16,7 @@ int main()
 	srand(time(0));
 	// input and output files
 	ifstream input, qe_out;
-	ofstream qe_in, log, opt_axsf, accept_axsf, trial_axsf;
+	ofstream qe_in, log, opt_axsf, accept_axsf, trial_axsf, trial_xsf;
 	// define of system
 	cell sys_accept, sys_trial;
 	mc mc_control;
@@ -36,6 +36,7 @@ int main()
 	// run first QE
 	cout<<"==============Begin iteration"<<setw(5)<<1<<"=============="<<endl;
 	qe_in.open("qe.in"); qe_control.write_qe_in(input,qe_in,sys_accept); qe_in.close();
+	cout<<"Call QE for the initial structure"<<endl;
 	qe_control.call(mc_control.if_test);
 	if (!mc_control.if_test)
 	{
@@ -45,15 +46,21 @@ int main()
 	{
 		sys_accept.energy = 0;
 	}
+	// print info
+	cout<<endl<<"Save structures to files"<<endl;
+	if (sys_accept.if_vc_relax)
+		cout<<"    Warning: QE runs vc-relax, .axsf is meanless"<<endl;
 	opt_axsf.open("save_opt.axsf");
 	accept_axsf.open("save_accept.axsf");
 	trial_axsf.open("save_trial.axsf");
+	trial_xsf.open("save_trial.xsf");
 	sys_accept.write_axsf(opt_axsf);
 	sys_accept.write_axsf(accept_axsf);
 	sys_accept.write_axsf(trial_axsf);
 	sys_accept.write_axsf(opt_axsf,1);
 	sys_accept.write_axsf(accept_axsf,1);
 	sys_accept.write_axsf(trial_axsf,1);
+	sys_accept.write_xsf(trial_xsf,1);
 
 	// initialize mc
 	mc_control.save_opt_structure(sys_accept);
@@ -103,9 +110,13 @@ int main()
 			log<<fixed<<setprecision(9)<<setw(20)<<sys_trial.energy<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.opt_e<<setw(14)<<0<<endl;
 		}
 		// write to axsf file
+		cout<<endl<<"Save structures to files"<<endl;
+		if (sys_accept.if_vc_relax)
+			cout<<"    Warning: QE runs vc-relax, .axsf is meanless"<<endl;
 		mc_control.opt_c.write_axsf(opt_axsf,iter);
 		sys_accept.write_axsf(accept_axsf,iter);
 		sys_trial.write_axsf(trial_axsf,iter);
+		sys_trial.write_xsf(trial_xsf,iter);
 		cout<<"================================================"<<endl<<endl;
 	}
 	return 0;
