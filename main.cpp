@@ -37,7 +37,14 @@ int main()
 	cout<<"==============Begin iteration"<<setw(5)<<1<<"=============="<<endl;
 	qe_in.open("qe.in"); qe_control.write_qe_in(input,qe_in,sys_accept); qe_in.close();
 	qe_control.call(mc_control.if_test);
-	qe_out.open("qe.out"); sys_accept.read_from_qe(qe_out); qe_out.close();
+	if (!mc_control.if_test)
+	{
+		qe_out.open("qe.out"); sys_accept.read_from_qe(qe_out); qe_out.close();
+	}
+	else
+	{
+		sys_accept.energy = 0;
+	}
 	opt_axsf.open("save_opt.axsf");
 	accept_axsf.open("save_accept.axsf");
 	trial_axsf.open("save_trial.axsf");
@@ -77,7 +84,7 @@ int main()
 		}
 		else
 		{
-			sys_trial.energy += ((double)rand()/RAND_MAX - 0.5)*0.0;
+			sys_trial.energy += ((double)rand()/RAND_MAX - 0.5)*0.1;
 		}
 		// check if accept new structure
 		if (mc_control.check_if_accept(sys_accept,sys_trial))
