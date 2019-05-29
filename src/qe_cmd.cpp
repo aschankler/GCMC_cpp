@@ -98,7 +98,7 @@ void qe_cmd :: call(int if_test)
 	if (if_test)
 		ss<<"mpirun"<<" -n "<<num_core<<" echo '    Testing'";
 	else
-		ss<<mpi_launcher<<" -n "<<num_core<<" "<<qe_exe<<" -npool "<<npool<<" -ndiag "<<ndiag<<" -input qe.in > qe.out";
+		ss<<"mkdir -p QE_run; mv qe.in QE_run; cp -r *.upf QE_run 2>/dev/null; cd QE_run; "<<mpi_launcher<<" -n "<<num_core<<" "<<qe_exe<<" -npool "<<npool<<" -ndiag "<<ndiag<<" -input qe.in > qe.out; "<<"cp qe.out ../; cd ../";
 	tmp = ss.str();
 	cout<<endl<<"Launching QE using command:"<<endl;
 	cout<<"    "<<tmp<<endl;
