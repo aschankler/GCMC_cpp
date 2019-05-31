@@ -2,6 +2,7 @@
 #define MC
 
 #include <fstream>
+#include <vector>
 #include "class.h"
 #include "cell.h"
 
@@ -16,10 +17,12 @@ public:
 	int if_test;
 	// action probability (0, add; 1, remove; 2, swap)
 	double act_p[3];
-	// number of atoms changed (1, add; -1, remove; 0, swap)
-	int num_change;
-	// element type of atoms changed
-	int ele_change;
+	// which action is chosen
+	int act_type;
+	// number of elements
+	int num_ele;
+	// number of atoms changed for each element
+	vector<int> num_atm_each_change;
 	// global optimized formation energy
 	double opt_e;
 	// global optimized cell
@@ -34,6 +37,7 @@ public:
 
 	void read_from_in(std::ifstream& in);
 
+	int factor(int n);
 	void create_new_structure(cell c_old, cell& c_new);
 	void save_opt_structure(cell& c_new);
 	int check_if_accept(cell& c_old, cell& c_new);

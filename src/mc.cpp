@@ -16,6 +16,7 @@ void mc :: read_from_in(ifstream& in)
 	string label_T = "temperature";
 	string label_if_test = "if_test";
 	string label_act_p = "begin_action_probability";
+	string label_num_ele = "num_ele";
 	string tmp;
 	stringstream ss;
 
@@ -50,7 +51,17 @@ void mc :: read_from_in(ifstream& in)
 	in>>act_p[0]>>act_p[1]>>act_p[2];
 	in.clear(); in.seekg(ios::beg);
 
+	// get number of elements
+	getline(in,tmp);
+	while(tmp.find(label_num_ele) == string::npos)
+		getline(in,tmp);
+	ss << (tmp);
+	getline(ss,tmp,'='); ss >> num_ele;
+	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
+
 	// initialize other parameters
+	num_atm_each_change.resize(num_ele);
+	act_type = -1;
 	opt_e = 0;
 }
 
@@ -70,8 +81,6 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 	// for exam remove and swap
 	int num_removable_ele;
 	int num_movable_ele;
-	// for determin which action to take
-	int act_type;
 	//=======================================
 	// check if each action is accessable, and adjust p if not
 	cout<<"Begin adjust weight of actions:"<<endl;
@@ -167,7 +176,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 	for(size_t t1=0; t1<3; t1++)
 		add_p_sum += tmp_p[t1];
 	// exit if no actions are allowed
-	if (add_p_sum <= 0)
+	if (fabs(add_p_sum) <= 1e-10)
 	{
 		cout<<"Error: No actions are legal"<<endl;
 		exit(EXIT_FAILURE);
@@ -186,16 +195,17 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 			add_p_sum -= tmp_p[t1];
 		}
 	}
-	//cout<<"Choose action "<<act_type<<". ";
+	// start applying change
 	//=======================================
+	for (size_t t1=0; t1<num_ele; t1++)
+		num_atm_each_change[t1] = 0;
 	switch(act_type)
 	{
 		//---------------------------------------
 		// add
 		case 0:
 		{
-			ele_change = ele_type_add;
-			num_change = 1;
+			num_atm_each_change[ele_type_add] = 1;
 			// adjust pos_add so it is in the cell
 			vec bb[3];
 			double coef_bb[3];
@@ -230,10 +240,9 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 					atm_id_tmp--;
 				}
 			}
-			ele_change = c_new.atm_list[atm_id_tmp].type;
-			num_change = -1;
+			num_atm_each_change[c_old.atm_list[atm_id_tmp].type] = -1;
 			c_new.rm_atom(atm_id_tmp);
-			cout<<"Atom removed, -"<<atm_id_tmp+1<<" "<<c_new.ele_list[ele_change].sym<<endl;
+			cout<<"Atom removed, -"<<atm_id_tmp+1<<" "<<c_old.atm_list[atm_id_tmp].ele->sym<<endl;
 			break;
 		}
 		//---------------------------------------
@@ -268,8 +277,6 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 					atm_id_tmp2--;
 				}
 			}
-			ele_change = -1;
-			num_change = 0;
 			c_new.sp_atom(atm_id_tmp,atm_id_tmp2);
 			cout<<"Atoms swapped, "<<atm_id_tmp+1<<" "<<c_old.atm_list[atm_id_tmp].ele->sym<<" <--> "<<atm_id_tmp2+1<<" "<<c_old.atm_list[atm_id_tmp2].ele->sym<<endl;
 			break;
@@ -308,60 +315,35 @@ int mc :: check_if_accept(cell& c_old, cell& c_new)
 	if (fabs(c_new.energy) < 1e-9)
 	{
 		accept = 0;
-		cout<<"    Warning: SCF of new structure does not converge"<<endl;
+		cout<<"        Warning: SCF of new structure does not converge"<<endl;
 		cout<<"    Rejected"<<endl;
 	}
 	else
 	{
-		switch (num_change)
+		switch (act_type)
 		{
 			//---------------------------------------
-			// swap
+			// add,remove, and swap
 			case 0:
-			{
-				exp_main = exp((e1-e2)/T/kb);
-				cout<<"    (Exp.) total factor: "<<exp_main<<'\t'<<endl;
-				if (e2 < e1)
-				{
-					accept = 1;
-					cout<<"    Accepted, new structure has lower formation energy"<<endl;
-					if (e2 < opt_e)
-					{
-						opt_e = e2;
-						opt_c = c_new;
-						cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
-					}
-				}
-				else if ((double)rand()/RAND_MAX < exp((e1-e2)/T/kb))
-				{
-					accept = 1;
-					cout<<"    Accepted, but new structure has higher formation energy"<<endl;
-				}
-				else
-				{
-					accept = 0;
-					cout<<"    Rejected"<<endl;
-				}
-				break;
-			}
-			//---------------------------------------
-			// add and remove
 			case 1:
-			case -1:
+			case 2:
 			{
 				// calculate prefactor and exp
-				c_new.ele_list[ele_change].update_tb(T);
-				if (num_change == 1)
-					exp_pre = c_new.vol/(c_new.num_ele_each[ele_change]*pow(c_new.ele_list[ele_change].tb,3));
-				else
-					exp_pre = c_old.num_ele_each[ele_change]*pow(c_new.ele_list[ele_change].tb,3)/c_new.vol;
+				exp_pre = 1;
+				for(size_t t1=0; t1<num_ele; t1++)
+				{
+					c_old.ele_list[t1].update_tb(T);
+					c_new.ele_list[t1].update_tb(T);
+					exp_pre *= ( pow(c_new.vol,num_atm_each_change[t1])*factor(c_old.num_ele_each[t1])/pow(c_old.ele_list[t1].tb,3*num_atm_each_change[t1])/factor(num_atm_each_change[t1]+c_old.num_ele_each[t1]) );
+				}
 				exp_main = exp((e1-e2)/T/kb);
 				cout<<"    Pre. factor: "<<exp_pre<<"    exp. factor: "<<exp_main<<"    total factor: "<<exp_pre*exp_main<<endl;
 				// start evaluating whether to accept or reject
 				if (1 < exp_pre*exp_main)
 				{
 					accept = 1;
-					cout<<"    Accepted, new structure has lower volume-factored-in formation energy"<<endl;
+					cout<<"    ====Accepted===="<<endl;
+					cout<<"    New structure has lower volume-factored-in formation energy"<<endl;
 					if (e2 < opt_e)
 					{
 						opt_e = e2;
@@ -372,7 +354,8 @@ int mc :: check_if_accept(cell& c_old, cell& c_new)
 				else if ((double)rand()/RAND_MAX < exp_pre*exp_main)
 				{
 					accept = 1;
-					cout<<"    Accepted, but new structure has highter volume-factored-in formation energy"<<endl;
+					cout<<"    ----Accepted----"<<endl;
+					cout<<"    New structure has highter volume-factored-in formation energy"<<endl;
 					if (e2 < opt_e)
 					{
 						opt_e = e2;
@@ -383,20 +366,33 @@ int mc :: check_if_accept(cell& c_old, cell& c_new)
 				else
 				{
 					accept = 0;
-					cout<<"    Rejected"<<endl;
+					cout<<"    ----Rejected----"<<endl;
 				}
 				break;
 			}
 			//---------------------------------------
 			default:
 			{
-				cout<<"Error: Invalid number of atoms changed: "<<num_change<<endl;
+				cout<<"Error: Invalid action number: "<<act_type<<endl;
 				exit(EXIT_FAILURE);
 			}
 		}
 	}
-	cout<<"Best formation energy is "<<setw(20)<<setprecision(9)<<opt_e<<endl;
+	cout<<"Best formation energy is "<<setw(20)<<setprecision(9)<<opt_e<<" eV"<<endl;
 	return accept;
+}
+
+int mc :: factor(int n)
+{
+	if (n < 0)
+	{
+		cout<<"Error: Number of atoms should not be negative"<<endl;
+		exit(EXIT_FAILURE);
+	}
+	if (n==0)
+		return 1;
+	else
+		return factor(n-1);
 }
 
 void mc :: print()

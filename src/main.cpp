@@ -2,8 +2,8 @@
 #include <iomanip>
 #include <fstream>
 #include <cstring>
-#include <ctime>
 #include <cstdlib>
+#include <chrono>
 #include "element.h"
 #include "cell.h"
 #include "mc.h"
@@ -13,7 +13,8 @@ using namespace std;
 
 int main()
 {
-	srand(time(0));
+	chrono::high_resolution_clock::time_point now = chrono::high_resolution_clock::now();
+	srand(now.time_since_epoch().count());
 	// input and output files
 	ifstream input, qe_out;
 	ofstream qe_in, log, opt_axsf, accept_axsf, trial_axsf, trial_xsf;
