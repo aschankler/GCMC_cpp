@@ -382,6 +382,7 @@ int mc :: check_if_accept(cell& c_old, cell& c_new)
 				}
 				else
 				{
+					accept = 0;
 					cout<<"    Rejected"<<endl;
 				}
 				break;
