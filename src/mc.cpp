@@ -48,9 +48,13 @@ void mc :: read_from_in(ifstream& in)
 	getline(in, tmp);
 	while(tmp.find(label_act_p) == string::npos)
 		getline(in,tmp);
+	getline(in, tmp);
+	ss << (tmp);
 	for(size_t t1=0; t1<num_act; t1++)
-		in>>act_p[t1];
-	in.clear(); in.seekg(ios::beg);
+		act_p[t1]=0;
+	for(size_t t1=0; t1<num_act; t1++)
+		ss>>act_p[t1];
+	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
 
 	// get number of elements
 	getline(in,tmp);
