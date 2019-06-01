@@ -48,7 +48,8 @@ void mc :: read_from_in(ifstream& in)
 	getline(in, tmp);
 	while(tmp.find(label_act_p) == string::npos)
 		getline(in,tmp);
-	in>>act_p[0]>>act_p[1]>>act_p[2];
+	for(size_t t1=0; t1<num_act; t1++)
+		in>>act_p[t1];
 	in.clear(); in.seekg(ios::beg);
 
 	// get number of elements
@@ -401,5 +402,7 @@ void mc :: print()
 	cout<<"Simulation temperature: "<<T<<endl;
 	cout<<"If running test: "<<if_test<<endl;
 	cout<<"Action probability: "<<endl;
-	cout<<'\t'<<act_p[0]<<'\t'<<act_p[1]<<'\t'<<act_p[2]<<endl;
+	for(size_t t1=0; t1<num_act; t1++)
+		cout<<'\t'<<act_p[t1];
+	cout<<endl;
 }

@@ -15,8 +15,10 @@ public:
 	double T;
 	// if runing test
 	int if_test;
+	// number of action types
+	int const static num_act = 3;
 	// action probability (0, add; 1, remove; 2, swap)
-	double act_p[3];
+	double act_p[num_act];
 	// which action is chosen
 	int act_type;
 	// number of elements
@@ -32,8 +34,8 @@ public:
 	// status of if accepted or not
 	int accept;
 	// parameters
-	double ry_ev = 13.605693009;
-	double kb = 8.6173303e-5;  // ev/k
+	double const ry_ev = 13.605693009;
+	double const kb = 8.6173303e-5;  // ev/k
 
 	void read_from_in(std::ifstream& in);
 
