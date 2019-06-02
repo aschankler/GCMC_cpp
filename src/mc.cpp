@@ -320,8 +320,8 @@ int mc :: check_if_accept(cell& c_old, cell& c_new)
 	if (fabs(c_new.energy) < 1e-9)
 	{
 		accept = 0;
-		cout<<"        Warning: SCF of new structure does not converge"<<endl;
-		cout<<"    Rejected"<<endl;
+		cout<<"    Warning: SCF of new structure does not converge"<<endl;
+		cout<<"    ====Rejected===="<<endl;
 	}
 	else
 	{
