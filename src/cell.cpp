@@ -16,6 +16,7 @@ void cell :: read_from_in(ifstream& in)
 	string label_h_min = "h_min";
 	string label_h_max = "h_max";
 	string label_if_vc_relax = "if_vc_relax";
+	string label_if_change_v = "if_change_v";
 	string label_ele = "begin_elements";
 	string label_lat = "begin_lattice";
 	string label_atm = "begin_atom_positions";
@@ -59,6 +60,14 @@ void cell :: read_from_in(ifstream& in)
 		getline(in,tmp);
 	ss << (tmp);
 	getline(ss,tmp,'='); ss >> if_vc_relax;
+	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
+
+	// get if change v
+	getline(in,tmp);
+	while(tmp.find(label_if_change_v) == string::npos)
+		getline(in,tmp);
+	ss << (tmp);
+	getline(ss,tmp,'='); ss >> if_change_v;
 	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
 
 	// generate element list

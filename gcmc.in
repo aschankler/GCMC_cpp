@@ -14,6 +14,7 @@ begin_action_probability (add remove swap)
 h_min = 6
 h_max = 15
 if_vc_relax = 1
+if_change_v = 1
 
 num_ele = 2
 num_atm = 8

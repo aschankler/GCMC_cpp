@@ -35,6 +35,8 @@ public:
 	double vol;
 	// if vc-relax
 	int if_vc_relax;
+	// if change-v
+	int if_change_v;
 	// parameters
 	double ry_ev = 13.605693009;
 
