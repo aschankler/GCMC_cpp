@@ -4,12 +4,12 @@ ndiag        = 36
 qe_launcher  = "pw.x"
 mpi_launcher = "srun --cpu_bind=cores -c 2"
 
-max_iter     = 10
+max_iter     = 20
 temperature  = 500
 if_test      = 1
 
 begin_action_probability (add remove swap)
-0.1 0.1 1.0
+1.0 1.0 1.0
 
 h_min = 6
 h_max = 15
@@ -19,9 +19,9 @@ if_change_v = 1
 num_ele = 2
 num_atm = 8
 
-begin_elements (element mass mu r_min r_max add_p)
-Na  22.990  -1196.2733922  1.0  3.0  0.5
-Sb  121.76  -2119.4243232  2.0  3.0  0.5
+begin_elements (element mass mu rho r_min r_max add_p)
+Na  22.990  -1196.2733922  0.02582579  1.0  3.0  0.5
+Sb  121.76  -2119.4243232  0.03029588  2.0  3.0  0.5
 
 begin_lattice
  5.314320151    0.000000000    0.000000000

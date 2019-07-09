@@ -18,6 +18,8 @@ private:
 	double mu;
 	// thermal debroye wavelength
 	double tb;
+	// reference density
+	double rho;
 	// min max threshold
 	double r_min, r_max;
 	// probabilit of choosing to add

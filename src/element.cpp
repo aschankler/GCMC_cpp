@@ -8,7 +8,7 @@ using namespace std;
 
 void element :: get_param(stringstream& ss)
 {
-	ss>>sym>>wt>>mu>>r_min>>r_max>>p_add;
+	ss>>sym>>wt>>mu>>rho>>r_min>>r_max>>p_add;
 }
 
 void element :: update_tb(double T)

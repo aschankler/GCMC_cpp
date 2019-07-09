@@ -338,9 +338,10 @@ int mc :: check_if_accept(cell& c_old, cell& c_new)
 				c_new.get_volume();
 				for(size_t t1=0; t1<num_ele; t1++)
 				{
-					c_old.ele_list[t1].update_tb(T);
-					c_new.ele_list[t1].update_tb(T);
-					exp_pre *= ( pow(c_new.vol,num_atm_each_change[t1])*factor(c_old.num_ele_each[t1])/pow(c_old.ele_list[t1].tb,3*num_atm_each_change[t1])/factor(num_atm_each_change[t1]+c_old.num_ele_each[t1]) );
+					//c_old.ele_list[t1].update_tb(T);
+					//c_new.ele_list[t1].update_tb(T);
+					//exp_pre *= ( pow(c_new.vol,num_atm_each_change[t1])*factor(c_old.num_ele_each[t1])/pow(c_old.ele_list[t1].tb,3*num_atm_each_change[t1])/factor(num_atm_each_change[t1]+c_old.num_ele_each[t1]) );
+					exp_pre *= ( pow(c_new.vol,num_atm_each_change[t1])*factor(c_old.num_ele_each[t1])/pow(c_old.ele_list[t1].rho,-num_atm_each_change[t1])/factor(num_atm_each_change[t1]+c_old.num_ele_each[t1]) );
 				}
 				// if allow V to change, multiply exp_pre by (V_new/V_old)^N_tot(old)
 				if(c_new.if_change_v)
