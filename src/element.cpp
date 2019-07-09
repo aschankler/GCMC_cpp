@@ -9,6 +9,7 @@ using namespace std;
 void element :: get_param(stringstream& ss)
 {
 	ss>>sym>>wt>>mu>>rho>>r_min>>r_max>>p_add;
+	rho = rho/2.71828182846;
 }
 
 void element :: update_tb(double T)
