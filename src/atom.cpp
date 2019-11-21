@@ -1,5 +1,5 @@
 #include <iostream>
-#include <cstring>
+#include <string>
 #include <sstream>
 #include <cstdlib>
 #include "atom.h"

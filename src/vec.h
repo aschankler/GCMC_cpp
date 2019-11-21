@@ -2,7 +2,7 @@
 #define MY_VEC
 
 #include <iostream>
-#include <cstring>
+#include <string>
 #include <fstream>
 #include <sstream>
 #include "class.h"

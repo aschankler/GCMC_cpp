@@ -2,7 +2,7 @@
 #define QE_CMD
 
 #include <fstream>
-#include <cstring>
+#include <string>
 #include "class.h"
 #include "cell.h"
 

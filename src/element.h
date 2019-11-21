@@ -1,7 +1,7 @@
 #ifndef ELEMENT
 #define ELEMENT
 
-#include <cstring>
+#include <string>
 #include <sstream>
 #include "class.h"
 

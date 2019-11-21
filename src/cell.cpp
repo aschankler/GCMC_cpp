@@ -2,7 +2,7 @@
 #include <iomanip>
 #include <fstream>
 #include <sstream>
-#include <cstring>
+#include <string>
 #include "cell.h"
 #include "vec.h"
 #include "atom.h"

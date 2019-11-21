@@ -1,7 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <cstring>
+#include <string>
 #include <sstream>
 #include "qe_cmd.h"
 

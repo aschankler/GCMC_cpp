@@ -1,7 +1,7 @@
 #ifndef ATOM
 #define ATOM
 
-#include <cstring>
+#include <string>
 #include <sstream>
 #include <vector>
 #include "class.h"
