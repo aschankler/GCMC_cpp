@@ -25,4 +25,4 @@ clean:
 clean_test:
 	rm -rf *.axsf *.xsf qe.in qe.out log.dat
 clean_all:
-	rm -rf gcmc.x $(ODIR) *.axsf *.xsf qe.in qe.out log.dat
+	rm -rf gcmc.x $(ODIR) *.axsf *.xsf qe.in qe.out log.dat *.out

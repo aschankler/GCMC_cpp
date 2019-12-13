@@ -254,36 +254,41 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 		// swap
 		case 2:
 		{
-			// find the first atom to switch
-			atm_id_tmp = rand()%c_new.num_atm_move;
-			for(size_t t1=0; t1<c_new.num_atm; t1++)
+			int iter_swap = rand()%c_old.num_atm+1;
+			cout<<"Perform swap "<<iter_swap<<" times:"<<endl;
+			for(size_t t_swap=0; t_swap<iter_swap; t_swap++)
 			{
-				if(atm_id_tmp == 0 && c_new.atm_list[t1].if_move >= 1)
+				// find the first atom to switch
+				atm_id_tmp = rand()%c_new.num_atm_move;
+				for(size_t t1=0; t1<c_new.num_atm; t1++)
 				{
-					atm_id_tmp = t1;
-					break;
+					if(atm_id_tmp == 0 && c_new.atm_list[t1].if_move >= 1)
+					{
+						atm_id_tmp = t1;
+						break;
+					}
+					else if (c_new.atm_list[t1].if_move >= 1)
+					{
+						atm_id_tmp--;
+					}
 				}
-				else if (c_new.atm_list[t1].if_move >= 1)
+				// find the second atom to switch
+				atm_id_tmp2 = rand()%(c_new.num_atm_move - c_new.num_ele_each_move[c_new.atm_list[atm_id_tmp].type]);
+				for(size_t t1=0; t1<c_new.num_atm; t1++)
 				{
-					atm_id_tmp--;
+					if(atm_id_tmp2 == 0 && c_new.atm_list[t1].if_move >= 1 && c_new.atm_list[t1].type != c_new.atm_list[atm_id_tmp].type)
+					{
+						atm_id_tmp2 = t1;
+						break;
+					}
+					else if (c_new.atm_list[t1].if_move >= 1 && c_new.atm_list[t1].type != c_new.atm_list[atm_id_tmp].type)
+					{
+						atm_id_tmp2--;
+					}
 				}
+				c_new.sp_atom(atm_id_tmp,atm_id_tmp2);
+				cout<<"Atoms swapped, "<<atm_id_tmp+1<<" "<<c_old.atm_list[atm_id_tmp].ele->sym<<" <--> "<<atm_id_tmp2+1<<" "<<c_old.atm_list[atm_id_tmp2].ele->sym<<endl;
 			}
-			// find the second atom to switch
-			atm_id_tmp2 = rand()%(c_new.num_atm_move - c_new.num_ele_each_move[c_new.atm_list[atm_id_tmp].type]);
-			for(size_t t1=0; t1<c_new.num_atm; t1++)
-			{
-				if(atm_id_tmp2 == 0 && c_new.atm_list[t1].if_move >= 1 && c_new.atm_list[t1].type != c_new.atm_list[atm_id_tmp].type)
-				{
-					atm_id_tmp2 = t1;
-					break;
-				}
-				else if (c_new.atm_list[t1].if_move >= 1 && c_new.atm_list[t1].type != c_new.atm_list[atm_id_tmp].type)
-				{
-					atm_id_tmp2--;
-				}
-			}
-			c_new.sp_atom(atm_id_tmp,atm_id_tmp2);
-			cout<<"Atoms swapped, "<<atm_id_tmp+1<<" "<<c_old.atm_list[atm_id_tmp].ele->sym<<" <--> "<<atm_id_tmp2+1<<" "<<c_old.atm_list[atm_id_tmp2].ele->sym<<endl;
 			break;
 		}
 		//---------------------------------------
