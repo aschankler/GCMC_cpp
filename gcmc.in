@@ -19,7 +19,7 @@ if_change_v = 1
 num_ele = 2
 num_atm = 8
 
-begin_elements (element mass mu rho r_min r_max add_p)
+begin_elements (element mass mu rho r_min r_max add_p, rho is only require when if_vc_relax==1)
 Na  22.990  -1196.146548  0.02582579  1.5  3.0  1.0
 Sb  121.76  -2120.452848  0.03029588  1.5  3.0  0.0
 

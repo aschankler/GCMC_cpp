@@ -7,7 +7,7 @@
 #include "element.h"
 #include "cell.h"
 #include "mc.h"
-#include "qe_cmd.h"
+#include "calculator.h"
 
 using namespace std;
 
@@ -21,7 +21,7 @@ int main()
 	// define of system
 	cell sys_accept, sys_trial;
 	mc mc_control;
-	qe_cmd qe_control;
+	calculator qe_control;
 
 	// read parameter file
 	input.open("gcmc.in");

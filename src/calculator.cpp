@@ -3,54 +3,21 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include "qe_cmd.h"
+#include "calculator.h"
+#include "auxiliary.h"
 
 using namespace std;
 
-void qe_cmd :: read_from_in(ifstream& in)
+void calculator :: read_from_in(ifstream& in)
 {
-	string label_num_core = "num_core";
-	string label_npool = "npool";
-	string label_ndiag = "ndiag";
-	string label_qe_exe = "qe_launcher";
-	string label_mpi_launcher = "mpi_launcher";
-	string tmp;
-	stringstream ss;
-
-	// find number of core, npool and ndiag
-	getline(in,tmp);
-	while(tmp.find(label_num_core) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> num_core;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
-	//
-	while(tmp.find(label_npool) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> npool;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
-	//
-	while(tmp.find(label_ndiag) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> ndiag;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
-	// find launchers
-	while(tmp.find(label_qe_exe) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'"'); getline(ss,qe_exe,'"');
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
-	//
-	while(tmp.find(label_mpi_launcher) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'"'); getline(ss,mpi_launcher,'"');
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
+	read(in,"num_core",'=',num_core);
+	read(in,"npool",'=',npool);
+	read(in,"ndiag",'=',ndiag);
+	read(in,"qe_launcher",'=',qe_exe);
+	read(in,"mpi_launcher",'=',mpi_launcher);
 }
 
-void qe_cmd :: write_qe_in(ifstream& in, ofstream& out, cell& c_new)
+void calculator :: write_qe_in(ifstream& in, ofstream& out, cell& c_new)
 {
 	string label_qe_input = "begin_qe_input";
 	string label_qe_input2 = "end_qe_input";
@@ -80,7 +47,7 @@ void qe_cmd :: write_qe_in(ifstream& in, ofstream& out, cell& c_new)
 	out<<c_new.latt[2]<<endl;
 
 	out<<endl<<position<<endl;
-	for(size_t t1=0; t1<c_new.num_atm; t1++)
+	for(int t1=0; t1<c_new.num_atm; t1++)
 	{
 		out<<setw(2)<<c_new.atm_list[t1].ele->sym<<"    ";
 		out<<c_new.atm_list[t1].pos;
@@ -91,7 +58,7 @@ void qe_cmd :: write_qe_in(ifstream& in, ofstream& out, cell& c_new)
 	}
 }
 
-void qe_cmd :: call(int if_test)
+void calculator :: call(int if_test)
 {
 	stringstream ss;
 	string tmp;

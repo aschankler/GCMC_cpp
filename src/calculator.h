@@ -1,11 +1,11 @@
-#ifndef __QE_CMD__
-#define __QE_CMD__
+#ifndef __CALCULATOR__
+#define __CALCULATOR__
 
 #include <fstream>
 #include <string>
 #include "cell.h"
 
-class qe_cmd
+class calculator
 {
 public:
 	int num_core;
