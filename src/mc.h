@@ -1,9 +1,8 @@
-#ifndef MC
-#define MC
+#ifndef __MC__
+#define __MC__
 
 #include <fstream>
 #include <vector>
-#include "class.h"
 #include "cell.h"
 
 class mc
@@ -12,7 +11,7 @@ public:
 	// maximum number of iteration
 	int max_iter;
 	// simulation temperature
-	double T;
+	double temperature;
 	// if runing test
 	int if_test;
 	// number of action types
@@ -24,7 +23,7 @@ public:
 	// number of elements
 	int num_ele;
 	// number of atoms changed for each element
-	vector<int> num_atm_each_change;
+	std::vector<int> num_atm_each_change;
 	// global optimized formation energy
 	double opt_e;
 	// global optimized cell

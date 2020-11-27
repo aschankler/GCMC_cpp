@@ -1,13 +1,15 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <cmath>
+#include <math.h>
 #include "element.h"
 
 using namespace std;
 
-void element :: get_param(stringstream& ss)
+void element :: get_param(string tmp)
 {
+	stringstream ss;
+	ss << (tmp);
 	ss>>sym>>wt>>mu>>rho>>r_min>>r_max>>p_add;
 	rho = rho/2.71828182846;
 }

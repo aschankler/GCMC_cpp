@@ -1,17 +1,14 @@
-#ifndef ELEMENT
-#define ELEMENT
+#ifndef __ELEMENT__
+#define __ELEMENT__
 
 #include <string>
 #include <sstream>
-#include "class.h"
-
-using namespace std;
 
 class element
 {
-private:
+public:
 	// element symbol
-	string sym;
+	std::string sym;
 	// atomic weight
 	double wt;
 	// chemical potential
@@ -24,12 +21,8 @@ private:
 	double r_min, r_max;
 	// probabilit of choosing to add
 	double p_add;
-friend atom;
-friend cell;
-friend mc;
-friend qe_cmd;
-public:
-	void get_param(std::stringstream& ss);
+
+	void get_param(std::string tmp);
 	void update_tb(double T);
 
 	void print();

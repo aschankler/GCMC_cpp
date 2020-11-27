@@ -3,104 +3,56 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include "atom.h"
 #include "cell.h"
 #include "vec.h"
-#include "atom.h"
+#include "auxiliary.h"
 
 using namespace std;
 
 void cell :: read_from_in(ifstream& in)
 {
-	string label_num_ele = "num_ele";
-	string label_num_atm = "num_atm";
-	string label_h_min = "h_min";
-	string label_h_max = "h_max";
-	string label_if_vc_relax = "if_vc_relax";
-	string label_if_change_v = "if_change_v";
 	string label_ele = "begin_elements";
 	string label_lat = "begin_lattice";
 	string label_atm = "begin_atom_positions";
 	string tmp;
 	stringstream ss;
 
-	// get number of elements
-	getline(in,tmp);
-	while(tmp.find(label_num_ele) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> num_ele;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
-
-	// get number of atoms
-	getline(in,tmp);
-	while(tmp.find(label_num_atm) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> num_atm;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
-
-	// get threshold of height
-	getline(in,tmp);
-	while(tmp.find(label_h_min) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> h_min;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
-
-	getline(in,tmp);
-	while(tmp.find(label_h_max) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> h_max;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
-	
-	// get if vc-relax
-	getline(in,tmp);
-	while(tmp.find(label_if_vc_relax) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> if_vc_relax;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
-
-	// get if change v
-	getline(in,tmp);
-	while(tmp.find(label_if_change_v) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> if_change_v;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
+	read(in,"num_ele",'=',num_ele);
+	read(in,"num_atm",'=',num_atm);
+	read(in,"h_min",'=',h_min);
+	read(in,"h_max",'=',h_max);
+	read(in,"if_vc_relax",'=',if_vc_relax);
+	read(in,"if_change_v",'=',if_change_v);
 
 	// generate element list
 	ele_list.resize(num_ele);
-	getline(in,tmp);
-	while(tmp.find(label_ele) == string::npos)
-		getline(in,tmp);
-	for(size_t t1=0; t1<num_ele; t1++)
+	while(getline(in,tmp))
+		if(tmp.find(label_ele) != string::npos)
+			break;
+	for(int t1=0; t1<num_ele; t1++)
 	{
 		getline(in,tmp);
-		ss << (tmp);
-		ele_list[t1].get_param(ss);
-		ss.str(""); ss.clear();
+		ele_list[t1].get_param(tmp);
 	}
 	in.clear(); in.seekg(ios::beg);
 
 	// generate atom list
 	atm_list.resize(num_atm);
-	getline(in,tmp);
-	while(tmp.find(label_atm) == string::npos)
-		getline(in,tmp);
-	for(size_t t1=0; t1<num_atm; t1++)
+	while(getline(in,tmp))
+		if(tmp.find(label_atm) != string::npos)
+			break;
+	for(int t1=0; t1<num_atm; t1++)
 	{
 		getline(in,tmp);
-		ss << (tmp);
-		atm_list[t1].line_from_in(ss,ele_list);
-		ss.str(""); ss.clear();
+		atm_list[t1].line_from_in(tmp,ele_list);
 	}
 	in.clear(); in.seekg(ios::beg);
 
 	// get lattice parameter
-	while(tmp.find(label_lat) == string::npos)
-		getline(in,tmp);
+	while(getline(in,tmp))
+		if(tmp.find(label_lat) != string::npos)
+			break;
 	in>>latt[0]>>latt[1]>>latt[2];
 	in.clear(); in.seekg(ios::beg);
 }
@@ -120,11 +72,7 @@ void cell :: read_from_qe(ifstream& in)
 	int num_tmp;
 
 	// check number of atoms matches
-	getline(in,tmp);
-	while(tmp.find(label_num_atm) == string::npos)
-		getline(in,tmp);
-	ss<<(tmp); getline(ss,tmp,'='); ss>>num_tmp;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
+	read(in,"number of atoms/cell",'=',num_tmp);
 	if(num_tmp != num_atm)
 	{
 		cout<<"Error: Number of atoms in qe.out does not match record"<<endl;
@@ -140,13 +88,13 @@ void cell :: read_from_qe(ifstream& in)
 	{
 		cout<<"Warning: SCF does not converge, set energy and force to 0 Ry"<<endl;
 		energy = 0;
-		for(size_t t1=0; t1<num_atm; t1++)
+		for(int t1=0; t1<num_atm; t1++)
 			atm_list[t1].force = atm_list[t1].force * 0;
 		in.clear(); in.seekg(ios::beg);
 		return;
 	}
 	// save energy, forces, (cell parameters), and positions
-	for(size_t t1=0; t1<num_tmp;)
+	for(int t1=0; t1<num_tmp;)
 	{
 		getline(in,tmp);
 		if (tmp.find(label_energy) != string::npos)
@@ -159,7 +107,7 @@ void cell :: read_from_qe(ifstream& in)
 	while(tmp.find(label_force) == string::npos)
 		getline(in,tmp);
 	getline(in,tmp);
-	for(size_t t1=0; t1<num_atm; t1++)
+	for(int t1=0; t1<num_atm; t1++)
 	{
 		getline(in,tmp,'=');
 		in>>atm_list[t1].force;
@@ -170,7 +118,7 @@ void cell :: read_from_qe(ifstream& in)
 	{
 		while(tmp.find(label_cell) == string::npos)
 			getline(in,tmp);
-		for(size_t t1=0; t1<3; t1++)
+		for(int t1=0; t1<3; t1++)
 		{
 			in>>latt[t1];
 			getline(in,tmp);
@@ -179,7 +127,7 @@ void cell :: read_from_qe(ifstream& in)
 	// position
 	while(tmp.find(label_position) == string::npos)
 		getline(in,tmp);
-	for(size_t t1=0; t1<num_atm; t1++)
+	for(int t1=0; t1<num_atm; t1++)
 	{
 		in>>tmp>>atm_list[t1].pos;
 		getline(in,tmp);
@@ -207,7 +155,7 @@ void cell :: write_axsf(ofstream& out,int iter)
 {
 	out<<"PRIMCOORD "<<iter<<endl;
 	out<<num_atm<<" 1"<<endl;
-	for(size_t t1=0; t1<num_atm; t1++)
+	for(int t1=0; t1<num_atm; t1++)
 	{
 		out<<setw(2)<<atm_list[t1].ele->sym;
 		out<<atm_list[t1].pos<<atm_list[t1].force<<endl;
@@ -222,7 +170,7 @@ void cell :: write_xsf(ofstream& out,int iter)
 	out<<latt[2]<<endl;
 	out<<"PRIMCOORD "<<iter<<endl;
 	out<<num_atm<<" 1"<<endl;
-	for(size_t t1=0; t1<num_atm; t1++)
+	for(int t1=0; t1<num_atm; t1++)
 	{
 		out<<setw(2)<<atm_list[t1].ele->sym;
 		out<<atm_list[t1].pos<<atm_list[t1].force<<endl;
@@ -236,14 +184,14 @@ void cell :: count_move_atoms()
 	num_ele_each_remove.resize(num_ele);
 	num_atm_move = 0;
 	num_atm_remove = 0;
-	for(size_t t1=0; t1<num_ele; t1++)
+	for(int t1=0; t1<num_ele; t1++)
 	{
 		num_ele_each[t1] = 0;
 		num_ele_each_move[t1] = 0;
 		num_ele_each_remove[t1] = 0;
 	}
 	// start counting
-	for(size_t t1=0; t1<num_atm; t1++)
+	for(int t1=0; t1<num_atm; t1++)
 	{
 		num_ele_each[atm_list[t1].type]++;
 		switch(atm_list[t1].if_move)
@@ -329,7 +277,7 @@ void cell :: sp_atom(int s1, int s2)
 
 void cell :: update_tb(double T)
 {
-	for(size_t t1=0; t1<num_ele; t1++)
+	for(int t1=0; t1<num_ele; t1++)
 		ele_list[t1].update_tb(T);
 }
 
@@ -340,7 +288,7 @@ void cell :: min_distance(vec pos, double& rr, int& ind)
 	for(int t1=-1; t1<2; t1++)
 	for(int t2=-1; t2<2; t2++)
 	for(int t3=-1; t3<2; t3++)
-		for(size_t t4=0; t4<num_atm; t4++)
+		for(int t4=0; t4<num_atm; t4++)
 		{
 			r_tmp=(pos + latt[0]*t1 + latt[1]*t2 + latt[2]*t3 - atm_list[t4].pos).norm();
 			if (rr > r_tmp)
@@ -361,18 +309,18 @@ void cell :: print()
 	cout<<"Total removable atoms: "<<num_atm_remove<<endl;
 	cout<<"Total movable atoms: "<<num_atm_move<<endl;
 	cout<<"Atoms per elements: "<<endl;
-	for(size_t t1=0; t1<num_ele; t1++)
+	for(int t1=0; t1<num_ele; t1++)
 		cout<<ele_list[t1].sym<<'\t'<<num_ele_each[t1]<<endl;
 	cout<<"Reovable atoms per elements: "<<endl;
-	for(size_t t1=0; t1<num_ele; t1++)
+	for(int t1=0; t1<num_ele; t1++)
 		cout<<ele_list[t1].sym<<'\t'<<num_ele_each_remove[t1]<<endl;
 	cout<<"Movable atoms per elements: "<<endl;
-	for(size_t t1=0; t1<num_ele; t1++)
+	for(int t1=0; t1<num_ele; t1++)
 		cout<<ele_list[t1].sym<<'\t'<<num_ele_each_move[t1]<<endl;
 //	cout<<"List of elements:"<<endl;
-//	for(size_t t1=0; t1<num_ele; t1++)
+//	for(int t1=0; t1<num_ele; t1++)
 //		ele_list[t1].print();
 	cout<<"List of atoms:"<<endl;
-	for(size_t t1=0; t1<num_atm; t1++)
+	for(int t1=0; t1<num_atm; t1++)
 		atm_list[t1].print();
 }

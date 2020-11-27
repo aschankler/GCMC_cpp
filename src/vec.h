@@ -1,21 +1,16 @@
-#ifndef MY_VEC
-#define MY_VEC
+#ifndef __MY_VEC__
+#define __MY_VEC__
 
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <sstream>
-#include "class.h"
 
 class vec
 {
-private:
-	double x[3];
-friend atom;
-friend cell;
-friend mc;
-friend qe_cmd;
 public:
+	double x[3];
+
 	void import(double *);
 	void clean();					// reset value to zero
 	vec operator+(const vec&);

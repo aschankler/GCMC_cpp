@@ -1,19 +1,22 @@
 #include <iostream>
-#include <string>
 #include <sstream>
-#include <cstdlib>
+#include <string>
+#include <stdlib.h>
+#include "element.h"
 #include "atom.h"
 #include "vec.h"
-#include "element.h"
 
 using namespace std;
 
-void atom :: line_from_in(stringstream& ss, vector<element>& ele_list)
+void atom :: line_from_in(string tmp, vector<element>& ele_list)
 {
 	string ele_symbol;
+	stringstream ss;
+
+	ss<<(tmp);
 	ss>>ele_symbol>>pos>>if_move;
-	auto num_ele = ele_list.size();
-	for (size_t t1=0 ; t1 < num_ele ; t1++)
+	ele = nullptr;
+	for (size_t t1=0 ; t1 < ele_list.size() ; t1++)
 	{
 		if (ele_symbol == ele_list[t1].sym)
 		{
@@ -21,6 +24,11 @@ void atom :: line_from_in(stringstream& ss, vector<element>& ele_list)
 			ele = &ele_list[t1];
 			break;
 		}
+	}
+	if (ele == nullptr)
+	{
+		cout<<"Error: Element "<<ele_symbol<<" not defined!"<<endl;
+		exit(EXIT_FAILURE);
 	}
 }
 

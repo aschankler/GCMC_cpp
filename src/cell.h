@@ -1,12 +1,11 @@
-#ifndef CELL
-#define CELL
+#ifndef __CELL__
+#define __CELL__
 
 #include <fstream>
 #include <vector>
-#include "class.h"
-#include "vec.h"
 #include "element.h"
 #include "atom.h"
+#include "vec.h"
 
 class cell
 {
@@ -18,9 +17,9 @@ public:
 	// lattice parameter
 	vec latt[3];
 	// list of element
-	vector<element> ele_list;
+	std::vector<element> ele_list;
 	// list of atoms
-	vector<atom> atm_list;
+	std::vector<atom> atm_list;
 	// threshold of height
 	double h_min, h_max;
 	// energy of cell
@@ -28,9 +27,9 @@ public:
 	// number of movable atoms
 	int num_atm_move, num_atm_remove;
 	// number of atoms belonging each element
-	vector<int> num_ele_each;
+	std::vector<int> num_ele_each;
 	// number of movable atoms belonging each element
-	vector<int> num_ele_each_move, num_ele_each_remove;
+	std::vector<int> num_ele_each_move, num_ele_each_remove;
 	// volume of cell
 	double vol;
 	// if vc-relax
@@ -61,13 +60,7 @@ public:
 	void update_tb(double T);
 	void min_distance(vec pos, double& rr, int& ind);
 
-	// access member
-	int num_ele_f() {return num_ele;}
-	int num_atm_f() {return num_atm;}
-	string ele_f(int n) {return ele_list[n].sym;}
-	int num_ele_each_f(int n) {return num_ele_each[n];}
 	void print();
 };
-
 
 #endif

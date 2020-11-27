@@ -7,62 +7,29 @@
 #include <cstdlib>
 #include <cmath>
 #include "mc.h"
+#include "auxiliary.h"
 
 using namespace std;
 
 void mc :: read_from_in(ifstream& in)
 {
-	string label_max_iter = "max_iter";
-	string label_T = "temperature";
-	string label_if_test = "if_test";
 	string label_act_p = "begin_action_probability";
-	string label_num_ele = "num_ele";
 	string tmp;
 	stringstream ss;
 
-	// get max number of iteration
-	getline(in, tmp);
-	while(tmp.find(label_max_iter) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> max_iter;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
-
-	// get running temperature
-	getline(in, tmp);
-	while(tmp.find(label_T) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> T;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
-
-	// get if running test mode (No QE call)
-	getline(in, tmp);
-	while(tmp.find(label_if_test) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> if_test;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
+	read(in,"max_iter",'=',max_iter);
+	read(in,"temperature",'=',temperature);
+	read(in,"if_test",'=',if_test);
+	read(in,"num_ele",'=',num_ele);
 
 	// get action probability
-	getline(in, tmp);
-	while(tmp.find(label_act_p) == string::npos)
-		getline(in,tmp);
-	getline(in, tmp);
-	ss << (tmp);
-	for(size_t t1=0; t1<num_act; t1++)
-		act_p[t1]=0;
-	for(size_t t1=0; t1<num_act; t1++)
-		ss>>act_p[t1];
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
-
-	// get number of elements
-	getline(in,tmp);
-	while(tmp.find(label_num_ele) == string::npos)
-		getline(in,tmp);
-	ss << (tmp);
-	getline(ss,tmp,'='); ss >> num_ele;
-	ss.str(""); ss.clear(); in.clear(); in.seekg(ios::beg);
+	in.seekg(ios::beg); in.clear();
+	while(getline(in, tmp))
+		if(tmp.find(label_act_p) != string::npos)
+			break;
+	for(int t1=0; t1<num_act; t1++)
+		in>>act_p[t1];
+	in.clear(); in.seekg(ios::beg);
 
 	// initialize other parameters
 	num_atm_each_change.resize(num_ele);
@@ -95,10 +62,10 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 	{
 		// choose type of element to add
 		add_p_sum = 0;
-		for(size_t t1=0; t1<c_new.num_ele; t1++)
+		for(int t1=0; t1<c_new.num_ele; t1++)
 			add_p_sum += c_new.ele_list[t1].p_add;
 		add_p_sum = (double)rand()/RAND_MAX * add_p_sum;
-		for(size_t t1=0; t1<c_new.num_ele; t1++)
+		for(int t1=0; t1<c_new.num_ele; t1++)
 		{
 			if( add_p_sum <= c_new.ele_list[t1].p_add)
 			{
@@ -111,7 +78,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 				add_p_sum -= c_new.ele_list[t1].p_add;
 			}
 		}
-		for(size_t t1=0; t1<num_trial; t1++)
+		for(int t1=0; t1<num_trial; t1++)
 		{
 			// choose where attemp to add
 			atm_id_tmp = rand()%c_new.num_atm;
@@ -137,7 +104,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 	if (act_p[1] > 0)
 	{
 		num_removable_ele = 0;
-		for (size_t t1=0; t1<c_new.num_ele; t1++)
+		for (int t1=0; t1<c_new.num_ele; t1++)
 		{
 			if (c_new.num_ele_each_remove[t1] > 0)
 				num_removable_ele++;
@@ -156,7 +123,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 	if (act_p[2] > 0)
 	{
 		num_movable_ele = 0;
-		for (size_t t1=0; t1<c_new.num_ele; t1++)
+		for (int t1=0; t1<c_new.num_ele; t1++)
 		{
 			if (c_new.num_ele_each_move[t1] > 0)
 				num_movable_ele++;
@@ -178,7 +145,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 	// create new structure
 	// decide which action to choose
 	add_p_sum = 0;
-	for(size_t t1=0; t1<3; t1++)
+	for(int t1=0; t1<3; t1++)
 		add_p_sum += tmp_p[t1];
 	// exit if no actions are allowed
 	if (fabs(add_p_sum) <= 1e-10)
@@ -188,7 +155,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 	}
 	add_p_sum = (double)rand()/RAND_MAX * add_p_sum;
 	act_type = -1;
-	for(size_t t1=0; t1<3; t1++)
+	for(int t1=0; t1<3; t1++)
 	{
 		if(add_p_sum < tmp_p[t1])
 		{
@@ -202,7 +169,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 	}
 	// start applying change
 	//=======================================
-	for (size_t t1=0; t1<num_ele; t1++)
+	for (int t1=0; t1<num_ele; t1++)
 		num_atm_each_change[t1] = 0;
 	switch(act_type)
 	{
@@ -217,7 +184,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 			bb[0] = (c_new.latt[1]^c_new.latt[2])/((c_new.latt[1]^c_new.latt[2])*c_new.latt[0]);
 			bb[1] = (c_new.latt[2]^c_new.latt[0])/((c_new.latt[1]^c_new.latt[2])*c_new.latt[0]);
 			bb[2] = (c_new.latt[0]^c_new.latt[1])/((c_new.latt[1]^c_new.latt[2])*c_new.latt[0]);
-			for(size_t t1=0; t1<3; t1++)
+			for(int t1=0; t1<3; t1++)
 			{
 				coef_bb[t1] = pos_add*bb[t1];
 				coef_bb[t1] -= floor(coef_bb[t1]);
@@ -233,7 +200,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 		{
 			// find which removable atom to remove
 			atm_id_tmp = rand()%c_new.num_atm_remove;
-			for(size_t t1=0; t1<c_new.num_atm; t1++)
+			for(int t1=0; t1<c_new.num_atm; t1++)
 			{
 				if(atm_id_tmp == 0 && c_new.atm_list[t1].if_move == 2)
 				{
@@ -254,13 +221,14 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 		// swap
 		case 2:
 		{
-			int iter_swap = rand()%c_old.num_atm+1;
+			//int iter_swap = rand()%c_old.num_atm+1;
+			int iter_swap = 1; // only swap one pair
 			cout<<"Perform swap "<<iter_swap<<" times:"<<endl;
-			for(size_t t_swap=0; t_swap<iter_swap; t_swap++)
+			for(int t_swap=0; t_swap<iter_swap; t_swap++)
 			{
 				// find the first atom to switch
 				atm_id_tmp = rand()%c_new.num_atm_move;
-				for(size_t t1=0; t1<c_new.num_atm; t1++)
+				for(int t1=0; t1<c_new.num_atm; t1++)
 				{
 					if(atm_id_tmp == 0 && c_new.atm_list[t1].if_move >= 1)
 					{
@@ -274,7 +242,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 				}
 				// find the second atom to switch
 				atm_id_tmp2 = rand()%(c_new.num_atm_move - c_new.num_ele_each_move[c_new.atm_list[atm_id_tmp].type]);
-				for(size_t t1=0; t1<c_new.num_atm; t1++)
+				for(int t1=0; t1<c_new.num_atm; t1++)
 				{
 					if(atm_id_tmp2 == 0 && c_new.atm_list[t1].if_move >= 1 && c_new.atm_list[t1].type != c_new.atm_list[atm_id_tmp].type)
 					{
@@ -303,7 +271,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 void mc :: save_opt_structure(cell& c_new)
 {
 	opt_e = c_new.energy;
-	for(size_t t1=0; t1<c_new.num_atm; t1++)
+	for(int t1=0; t1<c_new.num_atm; t1++)
 		opt_e -= c_new.atm_list[t1].ele->mu;
 	opt_c = c_new;
 	cout<<"Initialized the minimum seeker to the starting structure"<<endl;
@@ -316,9 +284,9 @@ int mc :: check_if_accept(cell& c_old, cell& c_new)
 	// calculate formation energy
 	e1 = c_old.energy;
 	e2 = c_new.energy;
-	for(size_t t1=0; t1<c_old.num_atm; t1++)
+	for(int t1=0; t1<c_old.num_atm; t1++)
 		e1 -= c_old.atm_list[t1].ele->mu;
-	for(size_t t1=0; t1<c_new.num_atm; t1++)
+	for(int t1=0; t1<c_new.num_atm; t1++)
 		e2 -= c_new.atm_list[t1].ele->mu;
 	//==============================================
 	cout<<endl<<"Evaluating whether to accept new structure"<<endl;
@@ -341,21 +309,21 @@ int mc :: check_if_accept(cell& c_old, cell& c_new)
 				// calculate prefactor and exp
 				exp_pre = 1;
 				c_new.get_volume();
-				for(size_t t1=0; t1<num_ele; t1++)
+				for(int t1=0; t1<num_ele; t1++)
 				{
 //					if(c_new.if_change_v)
 //						exp_pre *= ( pow(c_new.vol,num_atm_each_change[t1])*factor(c_old.num_ele_each[t1])/pow(c_old.ele_list[t1].rho,-num_atm_each_change[t1])/factor(num_atm_each_change[t1]+c_old.num_ele_each[t1]) );
 //					else
 //					{
-						c_old.ele_list[t1].update_tb(T);
-						c_new.ele_list[t1].update_tb(T);
+						c_old.ele_list[t1].update_tb(temperature);
+						c_new.ele_list[t1].update_tb(temperature);
 						exp_pre *= ( pow(c_new.vol,num_atm_each_change[t1])*factor(c_old.num_ele_each[t1])/pow(c_old.ele_list[t1].tb,3*num_atm_each_change[t1])/factor(num_atm_each_change[t1]+c_old.num_ele_each[t1]) );
 //					}
 				}
 				// if allow V to change, multiply exp_pre by (V_new/V_old)^N_tot(old)
 				if(c_new.if_change_v)
 					exp_pre *= pow((c_new.vol/c_old.vol),c_old.num_atm);
-				exp_main = exp((e1-e2)/T/kb);
+				exp_main = exp((e1-e2)/temperature/kb);
 				cout<<"    Pre. factor: "<<exp_pre<<"    exp. factor: "<<exp_main<<"    total factor: "<<exp_pre*exp_main<<endl;
 				// start evaluating whether to accept or reject
 				if (1 < exp_pre*exp_main)
@@ -417,10 +385,10 @@ int mc :: factor(int n)
 void mc :: print()
 {
 	cout<<"Max iteration: "<<max_iter<<endl;
-	cout<<"Simulation temperature: "<<T<<endl;
+	cout<<"Simulation temperature: "<<temperature<<endl;
 	cout<<"If running test: "<<if_test<<endl;
 	cout<<"Action probability: "<<endl;
-	for(size_t t1=0; t1<num_act; t1++)
+	for(int t1=0; t1<num_act; t1++)
 		cout<<'\t'<<act_p[t1];
 	cout<<endl;
 }

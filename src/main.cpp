@@ -32,7 +32,7 @@ int main()
 	// initialize cell
 	sys_accept.count_move_atoms();
 	sys_accept.get_volume();
-	sys_accept.update_tb(mc_control.T);
+	sys_accept.update_tb(mc_control.temperature);
 
 	// run first QE
 	cout<<"==============Begin iteration"<<setw(5)<<1<<"=============="<<endl;
@@ -69,15 +69,15 @@ int main()
 	// start mc iteration
 	log.open("log.dat");
 	log<<setw(9)<<"Iteration";
-	for(size_t t1=0; t1<sys_accept.num_ele_f(); t1++)
-		log<<setw(4)<<sys_accept.ele_f(t1);
+	for(int t1=0; t1<sys_accept.num_ele; t1++)
+		log<<setw(4)<<sys_accept.ele_list[t1].sym;
 	log<<setw(20)<<"DFT_E"<<setw(20)<<"Trial_E_f"<<setw(20)<<"Previous_E_f"<<setw(20)<<"Accept_E_f"<<setw(20)<<"Optimal_E_f"<<setw(14)<<"If_accept"<<endl;
 	log<<setw(9)<<1;
-	for(size_t t1=0; t1<sys_accept.num_ele_f(); t1++)
-		log<<setw(4)<<sys_accept.num_ele_each_f(t1);
+	for(int t1=0; t1<sys_accept.num_ele; t1++)
+		log<<setw(4)<<sys_accept.num_ele_each[t1];
 	log<<fixed<<setprecision(9)<<setw(20)<<sys_accept.energy<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(14)<<1<<endl;
 	cout<<"================================================"<<endl<<endl;
-	for(size_t iter=2; iter<=mc_control.max_iter; iter++)
+	for(int iter=2; iter<=mc_control.max_iter; iter++)
 	{
 		cout<<"==============Begin iteration"<<setw(5)<<iter<<"=============="<<endl;
 		// create new structure
@@ -99,15 +99,15 @@ int main()
 		{
 			sys_accept = sys_trial;
 			log<<setw(9)<<iter;
-			for(size_t t1=0; t1<sys_trial.num_ele_f(); t1++)
-				log<<setw(4)<<sys_trial.num_ele_each_f(t1);
+			for(int t1=0; t1<sys_trial.num_ele; t1++)
+				log<<setw(4)<<sys_trial.num_ele_each[t1];
 			log<<fixed<<setprecision(9)<<setw(20)<<sys_trial.energy<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.opt_e<<setw(14)<<1<<endl;
 		}
 		else
 		{
 			log<<setw(9)<<iter;
-			for(size_t t1=0; t1<sys_trial.num_ele_f(); t1++)
-				log<<setw(4)<<sys_trial.num_ele_each_f(t1);
+			for(int t1=0; t1<sys_trial.num_ele; t1++)
+				log<<setw(4)<<sys_trial.num_ele_each[t1];
 			log<<fixed<<setprecision(9)<<setw(20)<<sys_trial.energy<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.opt_e<<setw(14)<<0<<endl;
 		}
 		// write to axsf file
