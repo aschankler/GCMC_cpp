@@ -16,6 +16,7 @@ public:
 	int num_atm;
 	// lattice parameter
 	vec latt[3];
+	vec latt_inv[3];
 	// list of element
 	std::vector<element> ele_list;
 	// list of atoms
@@ -41,7 +42,9 @@ public:
 
 	// io related function
 	void read_from_in(std::ifstream& in);
-	void read_from_qe(std::ifstream& in);
+	void read_output(int calculator_type);
+	void read_from_qe();
+	void read_from_vasp();
 	void write_axsf(std::ofstream& out);
 	void write_axsf(std::ofstream& out,int iter);
 	void write_xsf(std::ofstream& out);

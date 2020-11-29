@@ -1,20 +1,18 @@
-num_core     = 2
-npool        = 1
-ndiag        = 36
-qe_launcher  = "pw.x"
+num_core     = 512
+exe          = "vasp_std"
 mpi_launcher = "srun --cpu_bind=cores -c 2"
 
-max_iter     = 20
+max_iter     = 500
 temperature  = 500
-if_test      = 1
+if_test      = 0
 
 begin_action_probability (add remove swap)
 1.0 1.0 1.0
 
 h_min = 6
 h_max = 15
-if_vc_relax = 1
-if_change_v = 1
+if_vc_relax = 0
+if_change_v = 0
 
 num_ele = 2
 num_atm = 8
@@ -28,7 +26,7 @@ begin_lattice
 -2.657160075    4.602336255    0.000000000
  0.000000000    0.000000000    22.0
 
-begin_atom_positions (0, not movalbe; 1 movable but not removable; 2 all free)
+begin_atom_positions (0, not movable; 1 movable but not removable; 2 all free)
 Na     0.000000000    3.068224167    8.654790619 2
 Na     2.657160073    1.534112083    3.931576013 2
 Na     0.000000000    0.000000000    2.353489036 2
@@ -38,63 +36,62 @@ Na     2.657160073    1.534112083    0.777131108 0
 Sb     2.657160073    1.534112083    7.058538401 1
 Sb     0.000000000    3.068224167    2.373383326 2
 
-begin_qe_input
-&CONTROL
-  calculation       = 'vc-relax'
-  pseudo_dir        = './'
-  outdir            = './'
-  prefix            = 'GCMC'
-  nstep             = 100
-  forc_conv_thr     = 1.d-2
-  etot_conv_thr     = 1.d-3
-  verbosity         = 'high'
-  tprnfor           = .TRUE.
-  tstress           = .TRUE.
-  disk_io           = 'low'
-  wf_collect        = .TRUE.
-! restart_mode      = 'restart'
-/
+begin_vasp_incar
+SYSTEM= Li
+ 
+#Start parameter for this run
+PREC= Accurate
+ENCUT= 500
+#ALGO= N
+LPLANE=.TRUE.
+#LREAL=.Auto.
 
-&SYSTEM
-! input_dft         = 'PBESOL'
-  ibrav             = 0
-  ecutwfc           = 50
-  occupations       = 'smearing'
-  smearing          = 'gaussian'
-  degauss           = 0.001
-  nat               =
-  ntyp              = 2
-! lspinorb          = .TRUE.
-! nbnd              = 36
-! nosym             = .TRUE.
-/
+NELM=60
+GGA= RP
+IVDW=11
 
-&ELECTRONS 
-  mixing_mode       = 'local-TF'
-  mixing_beta       = 0.7
-  conv_thr          = 1.0e-4
-  electron_maxstep  = 100
-! startingpot       = 'file'
-! startingwfc       = 'file'
-  diagonalization   = 'david'
-/
+#SYMPREC=1E-4
+#Electronic Relaxation 1
+ISTART= 0
+#ICHARG= 1
+ISMEAR= 0
+SIGMA = 0.01
+EDIFF= 1E-4
+EDIFFG = -0.01
+#NUPDOWN=1
+ISPIN= 2
+#MAGMOM= 26*0 1*5 27*0.8 80*0.8
+NCORE= 32
+ 
+ISYM=0
+LDAU=T
+LDAUTYPE=2
+LDAUL= 2 -1
+LDAUU= 3.3 0.0
+LDAUJ= 0.0 0.0
+ 
+#Ionic Relaxation 1
+ISIF=2
+NSW= 300
+IBRION= 2
+#EDIFFG= -0.02
+ 
+#DOS related values
+#Lorbit= 11
+#NEDOS= 2000
+#NELM=100
+#EMIN = 0
+#EMAX = 8
 
-&IONS
-  ion_dynamics      = 'bfgs'
-  pot_extrapolation = 'atomic'
-  upscale           = 100
-  trust_radius_ini  = 0.05
-/
+#nelect=657
+end_vasp_incar
 
-&CELL
-  cell_dynamics     = 'bfgs'
-  cell_dofree       = 'shape'
-  press_conv_thr    = 0.01
-/
 
-ATOMIC_SPECIES
-Na  22.990  na_srl_gga.upf
-Sb  121.76  sb_frl_gga.upf
 
-K_POINTS (gamma)
-end_qe_input
+begin_vasp_kpoints
+K-points
+0              
+M        
+3 3 1
+0 0 0     
+end_vasp_kpoints

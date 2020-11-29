@@ -54,11 +54,37 @@ void cell :: read_from_in(ifstream& in)
 		if(tmp.find(label_lat) != string::npos)
 			break;
 	in>>latt[0]>>latt[1]>>latt[2];
+	latt_inv[0] = (latt[1]^latt[2])/((latt[0]^latt[1])*latt[2]);
+	latt_inv[1] = (latt[2]^latt[0])/((latt[0]^latt[1])*latt[2]);
+	latt_inv[2] = (latt[0]^latt[1])/((latt[0]^latt[1])*latt[2]);
 	in.clear(); in.seekg(ios::beg);
 }
 
-void cell :: read_from_qe(ifstream& in)
+void cell :: read_output(int calculator_type)
 {
+	switch (calculator_type)
+	{
+		case 1: //QE
+		{
+			read_from_qe();
+			break;
+		}
+		case 2: //vasp
+		{
+			read_from_vasp();
+			break;
+		}
+		default:
+		{
+			cout<<"Error: Invalid calculator type!"<<endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+}
+
+void cell :: read_from_qe()
+{
+	ifstream in("qe.out");
 	string label_num_atm = "number of atoms/cell";
 	string label_force = "Forces acting on atoms";
 	string label_cell = "CELL_PARAMETERS";
@@ -86,7 +112,7 @@ void cell :: read_from_qe(ifstream& in)
 	// check if SCF converges
 	if (num_tmp == 0)
 	{
-		cout<<"Warning: SCF does not converge, set energy and force to 0 Ry"<<endl;
+		cout<<"Warning: SCF does not converge, set energy and force to 0"<<endl;
 		energy = 0;
 		for(int t1=0; t1<num_atm; t1++)
 			atm_list[t1].force = atm_list[t1].force * 0;
@@ -139,6 +165,100 @@ void cell :: read_from_qe(ifstream& in)
 	if(in.eof())
 		cout<<"Warning: Structure not fully relaxed"<<endl;
 	in.clear(); in.seekg(ios::beg);
+
+	in.close();
+}
+
+void cell :: read_from_vasp()
+{
+	ifstream in("vasp.out");
+	ifstream coord_in("CONTCAR");
+	string label_energy = "F=";
+	string label_relaxed = "reached required accuracy";
+	string label_atm = "Direct";
+	stringstream ss;
+	string tmp;
+	int num_tmp;
+
+	// save energy
+	num_tmp=0;
+	while(getline(in,tmp))
+	{
+		if (tmp.find(label_energy) != string::npos)
+		{
+			ss << (tmp);
+			getline(ss,tmp,'=');
+			ss >> energy;
+			ss.str(""); ss.clear();
+			num_tmp++;
+		}
+		else if (tmp.find(label_relaxed) != string::npos)
+			break;
+	}
+	// check if SCF converges
+	if (num_tmp == 0)
+	{
+		cout<<"Warning: SCF does not converge, set energy and force to 0"<<endl;
+		energy = 0;
+		for(int t1=0; t1<num_atm; t1++)
+			atm_list[t1].force = atm_list[t1].force * 0;
+		return;
+	}
+	// check if relaxed
+	if (in.eof())
+		cout<<"Warning: Structure not fully relaxed"<<endl;
+	in.close();
+
+	// save cell parameters
+	getline(coord_in,tmp);
+	getline(coord_in,tmp);
+	coord_in>>latt[0];
+	coord_in>>latt[1];
+	coord_in>>latt[2];
+	get_volume();
+	// structure file check
+	getline(coord_in,tmp);
+	getline(coord_in,tmp);
+	for(int t1=0; t1<num_ele; t1++)
+	{
+		coord_in>>num_tmp;
+		if(num_tmp != num_ele_each[t1])
+		{
+			cout<<"Error: Wrong number of atoms in CONTCAR!"<<endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+	// save atomic positions
+	while(getline(coord_in,tmp))
+		if(tmp.find(label_atm) != string::npos)
+			break;
+	if(coord_in.eof())
+	{
+		cout<<"Warning: Final structure not found, set energy and force to 0"<<endl;
+		energy = 0;
+		for(int t1=0; t1<num_atm; t1++)
+			atm_list[t1].force = atm_list[t1].force * 0;
+		return;
+	}
+	else
+	{
+		vec frac_coord, atomic_coord;
+		for(auto m1:ele_list)
+		{
+			for(auto& m2:atm_list)
+			{
+				if(m1.sym == m2.ele->sym)
+				{
+					coord_in>>frac_coord; getline(coord_in,tmp);
+					atomic_coord = latt[0]*frac_coord.x[0]+latt[1]*frac_coord.x[1]+latt[2]*frac_coord.x[2];
+					m2.pos = atomic_coord;
+				}
+			}
+		}
+		cout<<"Warning: Forces not yet implemented for VASP, set forces to 0"<<endl;
+		for(int t1=0; t1<num_atm; t1++)
+			atm_list[t1].force = atm_list[t1].force * 0;
+	}
 }
 
 void cell :: write_axsf(ofstream& out)
@@ -228,13 +348,17 @@ void cell :: count_move_atoms()
 
 double cell :: get_volume()
 {
-	double h[3]={0,0,h_max-h_min};
+	double h[3]={0,0,h_max};
 	vec hh;
 	hh=&h[0];
 	if (if_vc_relax)
 		vol = (latt[0]^latt[1])*latt[2];
 	else
 		vol = (latt[0]^latt[1])*hh;
+
+	latt_inv[0] = (latt[1]^latt[2])/((latt[0]^latt[1])*latt[2]);
+	latt_inv[1] = (latt[2]^latt[0])/((latt[0]^latt[1])*latt[2]);
+	latt_inv[2] = (latt[0]^latt[1])/((latt[0]^latt[1])*latt[2]);
 	return vol;
 }
 

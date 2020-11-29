@@ -16,32 +16,33 @@ int main()
 	chrono::high_resolution_clock::time_point now = chrono::high_resolution_clock::now();
 	srand(now.time_since_epoch().count());
 	// input and output files
-	ifstream input, qe_out;
-	ofstream qe_in, log, opt_axsf, accept_axsf, trial_axsf, trial_xsf;
+	ifstream input;
+	ofstream log, opt_axsf, accept_axsf, trial_axsf, trial_xsf;
 	// define of system
 	cell sys_accept, sys_trial;
 	mc mc_control;
-	calculator qe_control;
+	calculator calculator_control;
 
 	// read parameter file
 	input.open("gcmc.in");
 	sys_accept.read_from_in(input);
 	mc_control.read_from_in(input);
-	qe_control.read_from_in(input);
+	calculator_control.read_from_in(input);
 
 	// initialize cell
 	sys_accept.count_move_atoms();
 	sys_accept.get_volume();
 	sys_accept.update_tb(mc_control.temperature);
 
-	// run first QE
+	// run first calculation
 	cout<<"==============Begin iteration"<<setw(5)<<1<<"=============="<<endl;
-	qe_in.open("qe.in"); qe_control.write_qe_in(input,qe_in,sys_accept); qe_in.close();
-	cout<<"Call QE for the initial structure"<<endl;
-	qe_control.call(mc_control.if_test);
+	calculator_control.write_input(input,sys_accept);
+	cout<<"Call calculator for the initial structure"<<endl;
+	calculator_control.call(mc_control.if_test);
 	if (!mc_control.if_test)
 	{
-		qe_out.open("qe.out"); sys_accept.read_from_qe(qe_out); qe_out.close(); sys_accept.get_volume();
+		sys_accept.read_output(calculator_control.calculator_type);
+		sys_accept.get_volume();
 	}
 	else
 	{
@@ -50,7 +51,7 @@ int main()
 	// print info
 	cout<<endl<<"Save structures to files"<<endl;
 	if (sys_accept.if_vc_relax)
-		cout<<"    Warning: QE runs vc-relax, .axsf is meanless"<<endl;
+		cout<<"    Warning: Lattice constant is relaxed, .axsf is meanless"<<endl;
 	opt_axsf.open("save_opt.axsf");
 	accept_axsf.open("save_accept.axsf");
 	trial_axsf.open("save_trial.axsf");
@@ -82,13 +83,14 @@ int main()
 		cout<<"==============Begin iteration"<<setw(5)<<iter<<"=============="<<endl;
 		// create new structure
 		mc_control.create_new_structure(sys_accept,sys_trial);
-		qe_in.open("qe.in"); qe_control.write_qe_in(input,qe_in,sys_trial); qe_in.close();
-		// run QE
-		qe_control.call(mc_control.if_test);
-		// read QE result
+		calculator_control.write_input(input,sys_trial);
+		// execute calculator
+		calculator_control.call(mc_control.if_test);
+		// read calculator result
 		if (!mc_control.if_test)
 		{
-			qe_out.open("qe.out"); sys_trial.read_from_qe(qe_out); qe_out.close(); sys_trial.get_volume();
+			sys_trial.read_output(calculator_control.calculator_type);
+			sys_trial.get_volume();
 		}
 		else
 		{
@@ -113,7 +115,7 @@ int main()
 		// write to axsf file
 		cout<<endl<<"Save structures to files"<<endl;
 		if (sys_accept.if_vc_relax)
-			cout<<"    Warning: QE runs vc-relax, .axsf is meanless"<<endl;
+			cout<<"    Warning: Lattice constant is relaxed, .axsf is meanless"<<endl;
 		mc_control.opt_c.write_axsf(opt_axsf,iter);
 		sys_accept.write_axsf(accept_axsf,iter);
 		sys_trial.write_axsf(trial_axsf,iter);
