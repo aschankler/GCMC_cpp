@@ -1,5 +1,5 @@
 num_core     = 4
-exe          = "pw"
+exe          = "pw.x"
 npool        = 1
 ndiag        = 4
 mpi_launcher = "srun --cpu_bind=cores -c 2"
@@ -93,8 +93,9 @@ begin_qe_input
 /
 
 ATOMIC_SPECIES
-Na  22.990  na_srl_gga.upf
-Sb  121.76  sb_frl_gga.upf
+Na  22.990  na_gga.upf
+Sb  121.76  sb_gga.upf
 
-K_POINTS (gamma)
+K_POINTS (automatic)
+2 2 2 1 1 1
 end_qe_input
