@@ -86,6 +86,14 @@ vec vec :: operator^(const vec& B)
 	return res;
 }
 
+const double vec::operator[](const std::size_t idx) const {
+    return x[idx];
+}
+
+double& vec::operator[](const std::size_t idx) {
+    return x[idx];
+}
+
 std::istream& operator>>(std::istream& in, vec &B)
 {
     in>>B.x[0]>>B.x[1]>>B.x[2];
@@ -134,7 +142,6 @@ vec vec :: rand_norm()
 
 //==========debug================
 
-void vec :: print()
-{
+void vec :: print() const {
 	std::cout<<x[0]<<'\t'<<x[1]<<'\t'<<x[2]<<std::endl;
 }

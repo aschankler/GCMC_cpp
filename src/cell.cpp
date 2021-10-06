@@ -22,6 +22,10 @@ void cell :: read_from_in(ifstream& in)
 	read(in,"num_atm",'=',num_atm);
 	read(in,"h_min",'=',h_min);
 	read(in,"h_max",'=',h_max);
+    read_opt(in,"a_min",'=',a_min);
+    read_opt(in,"a_max",'=',a_max);
+    read_opt(in,"b_min",'=',b_min);
+    read_opt(in,"b_max",'=',b_max);
 	read(in,"if_vc_relax",'=',if_vc_relax);
 	read(in,"if_change_v",'=',if_change_v);
 
@@ -361,6 +365,36 @@ double cell :: get_volume()
 	latt_inv[2] = (latt[0]^latt[1])/((latt[0]^latt[1])*latt[2]);
 	return vol;
 }
+
+
+const vec cell::to_crystal(const vec& pos) const {
+    vec crystal_coord;
+    crystal_coord.clean();
+
+    // Note: latt_inv = (latt^-1)^T
+    // crystal = latt_inv @ cart
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            crystal_coord[i] += latt_inv[i][j] * pos[j];
+        }
+    }
+    return crystal_coord;
+}
+
+
+const vec cell::from_crystal(const vec& pos) const {
+    vec cart_coord;
+    cart_coord.clean();
+
+    // cart = crystal @ latt
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            cart_coord[i] += pos[j] * latt[j][i];
+        }
+    }
+    return cart_coord;
+}
+
 
 void cell :: ad_atom(vec pos, int ele_type)
 {

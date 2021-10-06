@@ -19,6 +19,9 @@ public:
 	vec operator/(const double&);
 	double operator*(const vec&);
 	vec operator^(const vec&);		// for cross product
+    // Subscripts get at vector components
+    double& operator[](const std::size_t);
+    const double operator[](const std::size_t) const;
 	vec & operator=(const vec&);
 	vec & operator=(double*);		// can replace import
 	friend std::istream& operator>>(std::istream&,vec&);
@@ -29,7 +32,7 @@ public:
 	vec rand_norm();
 
 	//debug
-	void print();
+	void print() const;
 };
 
 #endif

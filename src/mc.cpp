@@ -86,8 +86,14 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 			pos_add = atm_tmp.pos + pos_add.rand_norm()*(ele_tmp.r_min + (double)rand()/RAND_MAX*(ele_tmp.r_max - ele_tmp.r_min));
 			c_new.min_distance(pos_add, r_tmp, atm_id_tmp);
 			// if do vc-relax, then only need to satisfy coordination rule, otherwise new position has to be between r_min and r_max
-			if (r_tmp>ele_tmp.r_min && r_tmp<ele_tmp.r_max && (c_new.if_vc_relax || (pos_add.x[2] > c_new.h_min && pos_add.x[2] < c_new.h_max)))
-				break;
+			if (r_tmp>ele_tmp.r_min && r_tmp<ele_tmp.r_max && (c_new.if_vc_relax || (pos_add.x[2] > c_new.h_min && pos_add.x[2] < c_new.h_max))) {
+                // Check the xy-coordinate range
+                vec frac_pos = c_new.to_crystal(pos_add);
+                if (c_new.a_min < frac_pos[0] && frac_pos[0] < c_new.a_max &&
+                    c_new.b_min < frac_pos[1] && frac_pos[1] < c_new.b_max) {
+				    break;
+                }
+            }
 		}
 		if (r_tmp>ele_tmp.r_min && r_tmp<ele_tmp.r_max && (c_new.if_vc_relax || (pos_add.x[2] > c_new.h_min && pos_add.x[2] < c_new.h_max)))
 			tmp_p[0] = act_p[0];

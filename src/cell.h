@@ -23,6 +23,11 @@ public:
 	std::vector<atom> atm_list;
 	// threshold of height
 	double h_min, h_max;
+    // threshold for addition in the xy plane
+    double a_min = 0.0;
+    double a_max = 1.0;
+    double b_min = 0.0;
+    double b_max = 1.0;
 	// energy of cell
 	double energy;
 	// number of movable atoms
@@ -53,6 +58,8 @@ public:
 	// self-opearted functions
 	void count_move_atoms();
 	double get_volume();
+    const vec to_crystal(const vec& pos) const;
+    const vec from_crystal(const vec& pos) const;
 
 	// adjust atom list
 	void ad_atom(vec pos, int ele_type);
