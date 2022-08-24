@@ -17,7 +17,7 @@ int main()
 	srand(now.time_since_epoch().count());
 	// input and output files
 	ifstream input;
-	ofstream log, opt_axsf, accept_axsf, trial_axsf, trial_xsf;
+	ofstream log, opt_axsf, accept_axsf, trial_axsf, trial_xsf, prop_axsf;
 	// define of system
 	cell sys_accept, sys_trial;
 	mc mc_control;
@@ -52,17 +52,22 @@ int main()
 	cout<<endl<<"Save structures to files"<<endl;
 	if (sys_accept.if_vc_relax)
 		cout<<"    Warning: Lattice constant is relaxed, .axsf is meanless"<<endl;
+
 	opt_axsf.open("save_opt.axsf");
 	accept_axsf.open("save_accept.axsf");
 	trial_axsf.open("save_trial.axsf");
 	trial_xsf.open("save_trial.xsf");
+	prop_axsf.open("save_propose.axsf");
+
 	sys_accept.write_axsf(opt_axsf);
 	sys_accept.write_axsf(accept_axsf);
 	sys_accept.write_axsf(trial_axsf);
+	sys_accept.write_axsf(prop_axsf);
 	sys_accept.write_axsf(opt_axsf,1);
 	sys_accept.write_axsf(accept_axsf,1);
 	sys_accept.write_axsf(trial_axsf,1);
 	sys_accept.write_xsf(trial_xsf,1);
+	sys_accept.write_axsf(prop_axsf, 1);
 
 	// initialize mc
 	mc_control.save_opt_structure(sys_accept);
@@ -83,8 +88,10 @@ int main()
 		cout<<"==============Begin iteration"<<setw(5)<<iter<<"=============="<<endl;
 		// create new structure
 		mc_control.create_new_structure(sys_accept,sys_trial);
-		calculator_control.write_input(input,sys_trial);
+		// Save initial proposal
+		sys_trial.write_axsf(prop_axsf, iter);
 		// execute calculator
+		calculator_control.write_input(input,sys_trial);
 		calculator_control.call(mc_control.if_test);
 		// read calculator result
 		if (!mc_control.if_test)
