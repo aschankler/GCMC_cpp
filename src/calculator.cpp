@@ -8,26 +8,36 @@
 
 using namespace std;
 
-void calculator :: read_from_in(ifstream& in)
-{
-	read(in,"exe",'=',exe);
-	if (exe.find("pw") != string::npos)
-		calculator_type = 1;
-	else if(exe.find("vasp") != string::npos)
-		calculator_type = 2;
-	else
-	{
+
+void Calculator::read_from_in(ifstream& in) {
+	int npool, ndiag;
+
+	read(in, "exe", '=', exe_name_);
+	if (exe_name_.find("pw") != string::npos) {
+		calculator_type_ = 1;
+	} else if(exe_name_.find("vasp") != string::npos) {
+		calculator_type_ = 2;
+	} else {
 		cout<<"Error: Currently only support QE and VASP!"<<endl;
 		exit(EXIT_FAILURE);
 	}
-	read(in,"mpi_launcher",'=',mpi_launcher);
-	read(in,"num_core",'=',num_core);
-	switch(calculator_type)
-	{
+
+	// Read parallelism
+	read(in, "mpi_launcher", '=', mpi_launcher_);
+	read(in, "num_core", '=', num_core_);
+	if (not read_opt(in, "para_params", '=', para_params_)) {
+		para_params_ = "";
+	}
+
+	switch(calculator_type_) {  // TODO
 	case 1:
 	{
-		read(in,"npool",'=',npool);
-		read(in,"ndiag",'=',ndiag);
+		if (read_opt(in,"npool",'=',npool)) {
+			para_params_.append(" -nk " + std::to_string(npool));
+		}
+		if (read_opt(in,"ndiag",'=',ndiag)) {
+			para_params_.append(" -ndiag " + std::to_string(ndiag));
+		}
 		break;
 	}
 	case 2:
@@ -42,9 +52,8 @@ void calculator :: read_from_in(ifstream& in)
 	}
 }
 
-void calculator :: write_input(ifstream& in, cell& c_new)
-{
-	switch (calculator_type)
+void Calculator::write_input(ifstream& in, cell& c_new) const {
+	switch (calculator_type_)
 	{
 		case 1: //QE
 		{
@@ -64,8 +73,7 @@ void calculator :: write_input(ifstream& in, cell& c_new)
 	}
 }
 
-void calculator :: write_qe_in(ifstream& in, cell& c_new)
-{
+void Calculator::write_qe_in(ifstream& in, cell& c_new) const {
 	ofstream out("qe.in");
 	string label_qe_input = "begin_qe_input";
 	string label_qe_input2 = "end_qe_input";
@@ -120,8 +128,7 @@ void calculator :: write_qe_in(ifstream& in, cell& c_new)
 	out.close();
 }
 
-void calculator ::write_vasp_in(std::ifstream &in, cell &c_new)
-{
+void Calculator::write_vasp_in(std::ifstream &in, cell &c_new) const {
 	ofstream incar("INCAR");
 	ofstream kpoints("KPOINTS");
 	ofstream poscar("POSCAR");
@@ -213,34 +220,21 @@ void calculator ::write_vasp_in(std::ifstream &in, cell &c_new)
 	poscar.close();
 }
 
-void calculator :: call(int if_test)
-{
+
+std::string Calculator::cli_string() const {
 	stringstream ss;
-	string tmp;
-	if (if_test)
-		ss<<"mpirun"<<" -n "<<num_core<<" echo '    Testing'";
-	else
-	{
-		switch(calculator_type)
+
+	ss << mpi_launcher_ << " -n " << num_core_ << " " << exe_name_;
+
+	switch(calculator_type_) {
+		case 1:  // QE
 		{
-		case 1: //QE
-		{
-			ss<<mpi_launcher<<" -n "<<num_core<<" "<<exe<<" -npool "<<npool<<" -ndiag "<<ndiag<<" -input qe.in > qe.out";
-			tmp = ss.str();
-			cout<<endl<<"Launching QE using command:"<<endl;
-			cout<<"    "<<tmp<<endl;
-			system(tmp.c_str());
-			cout<<"QE finished"<<endl;
+			ss << " " << para_params_ << " -in qe.in > qe.out";
 			break;
 		}
-		case 2: //vasp
+		case 2:  // VASP
 		{
-			ss<<mpi_launcher<<" -n "<<num_core<<" "<<exe<<" > vasp.out";
-			tmp = ss.str();
-			cout<<endl<<"Launching VASP using command:"<<endl;
-			cout<<"    "<<tmp<<endl;
-			system(tmp.c_str());
-			cout<<"VASP finished"<<endl;
+			ss << " > vasp.out";
 			break;
 		}
 		default:
@@ -248,6 +242,21 @@ void calculator :: call(int if_test)
 			cout<<"Error: Invalid calculator type!"<<endl;
 			exit(EXIT_FAILURE);
 		}
-		}
+	}
+
+	return ss.str();
+}
+
+
+void Calculator::call(int if_test) const {
+	string cli_str;
+
+	cli_str = cli_string();
+	cout << endl << "Launching calculator using command:" << endl;
+	cout << "    " << cli_str << endl;
+
+	if (not if_test) {
+		system(cli_str.c_str());
+		cout << "Calculation finished" << endl;
 	}
 }

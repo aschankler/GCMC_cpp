@@ -21,7 +21,7 @@ int main()
 	// define of system
 	cell sys_accept, sys_trial;
 	mc mc_control;
-	calculator calculator_control;
+	Calculator calculator_control;
 
 	// read parameter file
 	input.open("gcmc.in");
@@ -41,7 +41,7 @@ int main()
 	calculator_control.call(mc_control.if_test);
 	if (!mc_control.if_test)
 	{
-		sys_accept.read_output(calculator_control.calculator_type);
+		sys_accept.read_output(calculator_control.get_type());
 		sys_accept.get_volume();
 	}
 	else
@@ -96,7 +96,7 @@ int main()
 		// read calculator result
 		if (!mc_control.if_test)
 		{
-			sys_trial.read_output(calculator_control.calculator_type);
+			sys_trial.read_output(calculator_control.get_type());
 			sys_trial.get_volume();
 		}
 		else
