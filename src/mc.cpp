@@ -37,7 +37,7 @@ void mc :: read_from_in(ifstream& in)
 	opt_e = 0;
 }
 
-void mc :: create_new_structure(Cell c_old, Cell& c_new)
+void mc :: create_new_structure(const Cell c_old, Cell& c_new)
 {
 	c_new = c_old;
 	double tmp_p[3];
@@ -274,7 +274,7 @@ void mc :: create_new_structure(Cell c_old, Cell& c_new)
 	}
 }
 
-void mc :: save_opt_structure(Cell& c_new)
+void mc :: save_opt_structure(const Cell c_new)
 {
 	opt_e = c_new.energy;
 	for(int t1=0; t1<c_new.num_atm; t1++)

@@ -39,8 +39,8 @@ public:
 	void read_from_in(std::ifstream& in);
 
 	int factor(int n);
-	void create_new_structure(Cell c_old, Cell& c_new);
-	void save_opt_structure(Cell& c_new);
+	void create_new_structure(const Cell c_old, Cell& c_new);
+	void save_opt_structure(const Cell c_new);
 	int check_if_accept(Cell& c_old, Cell& c_new);
 
 	void print();
