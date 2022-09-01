@@ -96,26 +96,33 @@ void cell :: read_from_qe()
 	string label_energy = "!    total energy";
 	string label_final_energy = "Final energy";
 	string label_final_enthalpy = "Final enthalpy";
+	const string label_no_scf_conv = "convergence NOT achieved";
+
 	//string label_final_position = "Begin final coordinates";
 	string tmp;
 	stringstream ss;
 	int num_tmp;
+	bool no_scf_conv = false;
 
 	// check number of atoms matches
-	read(in,"number of atoms/cell",'=',num_tmp);
+	read(in, label_num_atm, '=', num_tmp);
 	if(num_tmp != num_atm)
 	{
 		cout<<"Error: Number of atoms in qe.out does not match record"<<endl;
 		exit(EXIT_FAILURE);
 	}
+
 	// find number of iteration
-	for(num_tmp=0; !in.eof(); getline(in,tmp))
+	for (num_tmp = 0; !in.eof(); getline(in, tmp)) {
 		if (tmp.find(label_position) != string::npos)
 			num_tmp++;
+		if (tmp.find(label_no_scf_conv) != string::npos)
+			no_scf_conv = true;
+	}
 	in.clear(); in.seekg(ios::beg);
+
 	// check if SCF converges
-	if (num_tmp == 0)
-	{
+	if (num_tmp == 0 or no_scf_conv) {
 		cout<<"Warning: SCF does not converge, set energy and force to 0"<<endl;
 		energy = 0;
 		for(int t1=0; t1<num_atm; t1++)
@@ -132,7 +139,7 @@ void cell :: read_from_qe()
 	}
 	// energy
 	ss<<(tmp); getline(ss,tmp,'='); ss>>energy; energy*=ry_ev;
-	ss.str(""); ss.clear(); 
+	ss.str(""); ss.clear();
 	// forces
 	while(tmp.find(label_force) == string::npos)
 		getline(in,tmp);
