@@ -19,7 +19,7 @@ int main()
 	ifstream input;
 	ofstream log, opt_axsf, accept_axsf, trial_axsf, trial_xsf, prop_axsf;
 	// define of system
-	cell sys_accept, sys_trial;
+	Cell sys_accept, sys_trial;
 	mc mc_control;
 	Calculator calculator_control;
 
@@ -42,7 +42,6 @@ int main()
 	if (!mc_control.if_test)
 	{
 		sys_accept.read_output(calculator_control.get_type());
-		sys_accept.get_volume();
 	}
 	else
 	{
@@ -97,7 +96,6 @@ int main()
 		if (!mc_control.if_test)
 		{
 			sys_trial.read_output(calculator_control.get_type());
-			sys_trial.get_volume();
 		}
 		else
 		{

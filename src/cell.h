@@ -7,7 +7,7 @@
 #include "atom.h"
 #include "vec.h"
 
-class cell {
+class Cell {
   public:
     // number of elements
     int num_ele;
@@ -20,6 +20,7 @@ class cell {
     std::vector<element> ele_list;
     // list of atoms
     std::vector<atom> atm_list;
+
     // threshold of height
     double h_min, h_max;
     // threshold for addition in the xy plane
@@ -27,6 +28,7 @@ class cell {
     double a_max = 1.0;
     double b_min = 0.0;
     double b_max = 1.0;
+
     // energy of cell
     double energy;
     // number of movable atoms
@@ -35,29 +37,28 @@ class cell {
     std::vector<int> num_ele_each;
     // number of movable atoms belonging each element
     std::vector<int> num_ele_each_move, num_ele_each_remove;
-    // volume of cell
-    double vol;
     // if vc-relax
     int if_vc_relax;
     // if change-v
     int if_change_v;
-    // parameters
-    double ry_ev = 13.605693009;
 
     // io related function
     void read_from_in(std::ifstream& in);
     void read_output(int calculator_type);
-    void read_from_qe();
-    void read_from_vasp();
+    friend void read_from_qe(Cell&);
+    friend void read_from_vasp(Cell&);
 
-    void write_axsf(std::ofstream& out);
-    void write_axsf(std::ofstream& out,int iter);
-    void write_xsf(std::ofstream& out);
-    void write_xsf(std::ofstream& out,int iter);
+    void write_axsf(std::ofstream& out) const;
+    void write_axsf(std::ofstream& out,int iter) const;
+    void write_xsf(std::ofstream& out) const;
+    void write_xsf(std::ofstream& out,int iter) const;
 
     // self-opearted functions
     void count_move_atoms();
-    double get_volume();
+    double get_volume() const { return vol_; }
+    void update_volume();
+    void update_lat_inv();
+    void zero_force();
     const vec to_crystal(const vec& pos) const;
     const vec from_crystal(const vec& pos) const;
 
@@ -71,6 +72,10 @@ class cell {
     void min_distance(vec pos, double& rr, int& ind);
 
     void print();
+
+  private:
+    // volume of cell
+    double vol_;
 };
 
 #endif  // __CELL__

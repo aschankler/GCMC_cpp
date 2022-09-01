@@ -27,7 +27,7 @@ public:
 	// global optimized formation energy
 	double opt_e;
 	// global optimized cell
-	cell opt_c;
+	Cell opt_c;
 	// formation energy of old and new structure
 	double e1,e2;
 	// status of if accepted or not
@@ -39,9 +39,9 @@ public:
 	void read_from_in(std::ifstream& in);
 
 	int factor(int n);
-	void create_new_structure(cell c_old, cell& c_new);
-	void save_opt_structure(cell& c_new);
-	int check_if_accept(cell& c_old, cell& c_new);
+	void create_new_structure(Cell c_old, Cell& c_new);
+	void save_opt_structure(Cell& c_new);
+	int check_if_accept(Cell& c_old, Cell& c_new);
 
 	void print();
 };

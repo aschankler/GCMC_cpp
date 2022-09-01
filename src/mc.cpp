@@ -37,7 +37,7 @@ void mc :: read_from_in(ifstream& in)
 	opt_e = 0;
 }
 
-void mc :: create_new_structure(cell c_old, cell& c_new)
+void mc :: create_new_structure(Cell c_old, Cell& c_new)
 {
 	c_new = c_old;
 	double tmp_p[3];
@@ -274,7 +274,7 @@ void mc :: create_new_structure(cell c_old, cell& c_new)
 	}
 }
 
-void mc :: save_opt_structure(cell& c_new)
+void mc :: save_opt_structure(Cell& c_new)
 {
 	opt_e = c_new.energy;
 	for(int t1=0; t1<c_new.num_atm; t1++)
@@ -283,7 +283,7 @@ void mc :: save_opt_structure(cell& c_new)
 	cout<<"Initialized the minimum seeker to the starting structure"<<endl;
 }
 
-int mc :: check_if_accept(cell& c_old, cell& c_new)
+int mc :: check_if_accept(Cell& c_old, Cell& c_new)
 {
 	double exp_pre, exp_main;
 
@@ -314,7 +314,6 @@ int mc :: check_if_accept(cell& c_old, cell& c_new)
 			{
 				// calculate prefactor and exp
 				exp_pre = 1;
-				c_new.get_volume();
 				for(int t1=0; t1<num_ele; t1++)
 				{
 //					if(c_new.if_change_v)
@@ -323,12 +322,12 @@ int mc :: check_if_accept(cell& c_old, cell& c_new)
 //					{
 						c_old.ele_list[t1].update_tb(temperature);
 						c_new.ele_list[t1].update_tb(temperature);
-						exp_pre *= ( pow(c_new.vol,num_atm_each_change[t1])*factor(c_old.num_ele_each[t1])/pow(c_old.ele_list[t1].tb,3*num_atm_each_change[t1])/factor(num_atm_each_change[t1]+c_old.num_ele_each[t1]) );
+						exp_pre *= ( pow(c_new.get_volume(),num_atm_each_change[t1])*factor(c_old.num_ele_each[t1])/pow(c_old.ele_list[t1].tb,3*num_atm_each_change[t1])/factor(num_atm_each_change[t1]+c_old.num_ele_each[t1]) );
 //					}
 				}
 				// if allow V to change, multiply exp_pre by (V_new/V_old)^N_tot(old)
 				if(c_new.if_change_v)
-					exp_pre *= pow((c_new.vol/c_old.vol),c_old.num_atm);
+					exp_pre *= pow((c_new.get_volume()/c_old.get_volume()),c_old.num_atm);
 				exp_main = exp((e1-e2)/temperature/kb);
 				cout<<"    Pre. factor: "<<exp_pre<<"    exp. factor: "<<exp_main<<"    total factor: "<<exp_pre*exp_main<<endl;
 				// start evaluating whether to accept or reject

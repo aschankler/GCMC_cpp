@@ -12,9 +12,9 @@ class Calculator {
     std::string cli_string() const;
 
     void read_from_in(std::ifstream& in);
-    void write_input(std::ifstream& in, cell& c_new) const;
-    void write_qe_in(std::ifstream& in, cell& c_new) const;
-    void write_vasp_in(std::ifstream& in, cell& c_new) const;
+    void write_input(std::ifstream& in, Cell& c_new) const;
+    void write_qe_in(std::ifstream& in, Cell& c_new) const;
+    void write_vasp_in(std::ifstream& in, Cell& c_new) const;
     void call(int if_test) const;
 
   protected:

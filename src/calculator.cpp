@@ -49,7 +49,7 @@ void Calculator::read_from_in(ifstream& in) {
     }
 }
 
-void Calculator::write_input(ifstream& in, cell& c_new) const {
+void Calculator::write_input(ifstream& in, Cell& c_new) const {
     switch (calculator_type_) {
     case 1: { //QE
         write_qe_in(in,c_new);
@@ -66,7 +66,7 @@ void Calculator::write_input(ifstream& in, cell& c_new) const {
     }
 }
 
-void Calculator::write_qe_in(ifstream& in, cell& c_new) const {
+void Calculator::write_qe_in(ifstream& in, Cell& c_new) const {
     ofstream out("qe.in");
     string label_qe_input = "begin_qe_input";
     string label_qe_input2 = "end_qe_input";
@@ -116,7 +116,7 @@ void Calculator::write_qe_in(ifstream& in, cell& c_new) const {
     out.close();
 }
 
-void Calculator::write_vasp_in(std::ifstream &in, cell &c_new) const {
+void Calculator::write_vasp_in(std::ifstream &in, Cell &c_new) const {
     ofstream incar("INCAR");
     ofstream kpoints("KPOINTS");
     ofstream poscar("POSCAR");
