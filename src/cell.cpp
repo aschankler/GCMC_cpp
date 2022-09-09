@@ -109,6 +109,7 @@ void read_from_qe(Cell &cell_out) {
     string tmp;
     stringstream ss;
     int num_tmp;
+    int pos_tmp, energy_pos;
     bool no_scf_conv = false;
 
     // check number of atoms matches
@@ -140,9 +141,12 @@ void read_from_qe(Cell &cell_out) {
 
     // save energy, forces, (cell parameters), and positions
     for(int t1 = 0; t1 < num_tmp;) {
+        pos_tmp = in.tellg();
         getline(in, tmp);
-        if (tmp.find(label_energy) != string::npos)
+        if (tmp.find(label_energy) != string::npos) {
+            energy_pos = pos_tmp;
             t1++;
+        }
     }
 
     // energy
@@ -154,13 +158,18 @@ void read_from_qe(Cell &cell_out) {
     ss.clear();
 
     // forces
-    while(tmp.find(label_force) == string::npos)
+    while (!in.eof() and tmp.find(label_force) == string::npos)
         getline(in, tmp);
-    getline(in, tmp);
-    for(int t1 = 0; t1 < cell_out.num_atm; t1++) {
-        getline(in, tmp, '=');
-        in >> cell_out.atm_list[t1].force;
+    if (in.eof()) {
+        cout << "Could not find forces" << endl;
+        cell_out.zero_force();
+    } else {
         getline(in, tmp);
+        for(int t1 = 0; t1 < cell_out.num_atm; t1++) {
+            getline(in, tmp, '=');
+            in >> cell_out.atm_list[t1].force;
+            getline(in, tmp);
+        }
     }
 
     // cell parameters
@@ -174,11 +183,18 @@ void read_from_qe(Cell &cell_out) {
     }
 
     // position
-    while(tmp.find(label_position) == string::npos)
+    in.clear();
+    in.seekg(energy_pos);
+    while(!in.eof() and tmp.find(label_position) == string::npos)
         getline(in, tmp);
-    for(int t1 = 0; t1 < cell_out.num_atm; t1++) {
-        in >> tmp >> cell_out.atm_list[t1].pos;
-        getline(in, tmp);
+    if (in.eof()) {
+        cout << "Error: could not find positions" << endl;
+        exit(EXIT_FAILURE);
+    } else {
+        for(int t1 = 0; t1 < cell_out.num_atm; t1++) {
+            in >> tmp >> cell_out.atm_list[t1].pos;
+            getline(in, tmp);
+        }
     }
 
     // check if relax converged
