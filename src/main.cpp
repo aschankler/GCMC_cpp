@@ -3,18 +3,17 @@
 #include <fstream>
 #include <string>
 #include <cstdlib>
-#include <chrono>
 #include "element.h"
 #include "cell.h"
 #include "mc.h"
+#include "rng.h"
 #include "calculator.h"
 
 using namespace std;
 
+
 int main()
 {
-	chrono::high_resolution_clock::time_point now = chrono::high_resolution_clock::now();
-	srand(now.time_since_epoch().count());
 	// input and output files
 	ifstream input;
 	ofstream log, opt_axsf, accept_axsf, trial_axsf, trial_xsf, prop_axsf;
@@ -22,6 +21,8 @@ int main()
 	Cell sys_accept, sys_trial;
 	mc mc_control;
 	Calculator calculator_control;
+
+	gcmc::init_rng();
 
 	// read parameter file
 	input.open("gcmc.in");
@@ -73,14 +74,9 @@ int main()
 
 	// start mc iteration
 	log.open("log.dat");
-	log<<setw(9)<<"Iteration";
-	for(int t1=0; t1<sys_accept.num_ele; t1++)
-		log<<setw(4)<<sys_accept.ele_list[t1].sym;
-	log<<setw(20)<<"DFT_E"<<setw(20)<<"Trial_E_f"<<setw(20)<<"Previous_E_f"<<setw(20)<<"Accept_E_f"<<setw(20)<<"Optimal_E_f"<<setw(14)<<"If_accept"<<endl;
-	log<<setw(9)<<1;
-	for(int t1=0; t1<sys_accept.num_ele; t1++)
-		log<<setw(4)<<sys_accept.num_ele_each[t1];
-	log<<fixed<<setprecision(9)<<setw(20)<<sys_accept.energy<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(20)<<mc_control.opt_e<<setw(14)<<1<<endl;
+    mc_control.log_header(log, sys_accept);
+    mc_control.log_step(log, sys_accept, 1);
+
 	cout<<"================================================"<<endl<<endl;
 	for(int iter=2; iter<=mc_control.max_iter; iter++)
 	{
@@ -99,24 +95,15 @@ int main()
 		}
 		else
 		{
-			sys_trial.energy += ((double)rand()/RAND_MAX - 0.5)*0.1;
+			sys_trial.energy += (gcmc::rand_uniform() - 0.5)*0.1;
 		}
+
 		// check if accept new structure
-		if (mc_control.check_if_accept(sys_accept,sys_trial))
-		{
+		if (mc_control.check_if_accept(sys_accept, sys_trial)) {
 			sys_accept = sys_trial;
-			log<<setw(9)<<iter;
-			for(int t1=0; t1<sys_trial.num_ele; t1++)
-				log<<setw(4)<<sys_trial.num_ele_each[t1];
-			log<<fixed<<setprecision(9)<<setw(20)<<sys_trial.energy<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.opt_e<<setw(14)<<1<<endl;
 		}
-		else
-		{
-			log<<setw(9)<<iter;
-			for(int t1=0; t1<sys_trial.num_ele; t1++)
-				log<<setw(4)<<sys_trial.num_ele_each[t1];
-			log<<fixed<<setprecision(9)<<setw(20)<<sys_trial.energy<<setw(20)<<mc_control.e2<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.e1<<setw(20)<<mc_control.opt_e<<setw(14)<<0<<endl;
-		}
+        mc_control.log_step(log, sys_trial, iter);
+
 		// write to axsf file
 		cout<<endl<<"Save structures to files"<<endl;
 		if (sys_accept.if_vc_relax)

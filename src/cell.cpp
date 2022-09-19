@@ -82,6 +82,7 @@ void Cell::read_output(int calculator_type) {
     }
     }
 
+    count_move_atoms();
     update_volume();
     update_lat_inv();
 }
@@ -451,19 +452,35 @@ void Cell::update_tb(double T) {
         ele_list[t1].update_tb(T);
 }
 
-void Cell::min_distance(vec pos, double& rr, int& ind) {
-    double r_tmp;
-    rr = 1e10;
-    for(int t1=-1; t1<2; t1++)
-        for(int t2=-1; t2<2; t2++)
-            for(int t3=-1; t3<2; t3++)
-                for(int t4=0; t4<num_atm; t4++) {
-                    r_tmp=(pos + latt[0]*t1 + latt[1]*t2 + latt[2]*t3 - atm_list[t4].pos).norm();
-                    if (rr > r_tmp) {
-                        rr = r_tmp;
-                        ind = t4;
+
+/* Find shortest distance between `pos` and another atom in the cell */
+double Cell::min_distance(vec pos, int& min_idx) const {
+    double r_min, r_tmp;
+    r_min = 1e10;
+
+    for (int t1 = -1; t1 < 2; t1++) {
+        for (int t2 = -1; t2 < 2; t2++) {
+            for (int t3 = -1; t3 < 2; t3++) {
+                for (int at_idx = 0; at_idx < num_atm; at_idx++) {
+                    r_tmp = (
+                        pos + latt[0]*t1 + latt[1]*t2 + latt[2]*t3 - atm_list[at_idx].pos
+                    ).norm();
+
+                    if (r_min > r_tmp) {
+                        r_min = r_tmp;
+                        min_idx = at_idx;
                     }
                 }
+            }
+        }
+    }
+
+    return r_min;
+}
+
+double Cell::min_distance(vec pos) const {
+    int min_idx;
+    return min_distance(pos, min_idx);
 }
 
 void Cell :: print() {

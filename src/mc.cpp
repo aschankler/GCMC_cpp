@@ -6,8 +6,14 @@
 #include <vector>
 #include <cstdlib>
 #include <cmath>
+#include <random>
 #include "mc.h"
 #include "auxiliary.h"
+#include "rng.h"
+
+
+// In eV/K
+#define KB_EV 8.6173303e-5
 
 using namespace std;
 
@@ -20,7 +26,6 @@ void mc :: read_from_in(ifstream& in)
 	read(in,"max_iter",'=',max_iter);
 	read(in,"temperature",'=',temperature);
 	read(in,"if_test",'=',if_test);
-	read(in,"num_ele",'=',num_ele);
 
 	// get action probability
 	in.seekg(ios::beg); in.clear();
@@ -32,196 +37,223 @@ void mc :: read_from_in(ifstream& in)
 	in.clear(); in.seekg(ios::beg);
 
 	// initialize other parameters
-	num_atm_each_change.resize(num_ele);
 	act_type = -1;
 	opt_e = 0;
 }
 
-void mc :: create_new_structure(const Cell c_old, Cell& c_new)
-{
+
+int choose_add(const Cell &cell_old, vec &pos_add, int &ele_type) {
+    const int num_trial = 1000;
+
+    // Choose species to add
+    double add_weight_sum = 0;
+    for (int t1 = 0; t1 < cell_old.num_ele; t1++)
+        add_weight_sum += cell_old.ele_list[t1].p_add;
+
+    // Choose random number from [0, add_weight_sum)
+    ele_type = cell_old.num_ele;
+    std::uniform_real_distribution<double> ele_dist(0., add_weight_sum);
+    add_weight_sum = ele_dist(gcmc::rng);
+    for (int t1 = 0; t1 < cell_old.num_ele; t1++) {
+        add_weight_sum -= cell_old.ele_list[t1].p_add;
+        if(add_weight_sum <= 0) {
+            ele_type = t1;
+            break;
+        }
+    }
+
+    element ele_tmp = cell_old.ele_list[ele_type];
+
+    // Choose position to add
+    for (int t1 = 0; t1 < num_trial; t1++) {
+        // Generate new position
+        pos_add.rand();  // add in [0, 1)^3; crystal coordinates
+
+        // Old atom-centered version
+        // pos_add = atm_tmp.pos + pos_add.rand_norm()*(ele_tmp.r_min + (double)rand()/RAND_MAX*(ele_tmp.r_max - ele_tmp.r_min));
+
+        // Filter xy-coordinate range
+        if (not (cell_old.a_min < pos_add[0] && pos_add[0] < cell_old.a_max
+            && cell_old.b_min < pos_add[1] && pos_add[1] < cell_old.b_max)
+        ) {
+            continue;
+        }
+
+        // Convert to cartesian coordinates and check Z coordinate
+        pos_add = cell_old.from_crystal(pos_add);
+        if (pos_add.x[2] < cell_old.h_min || pos_add.x[2] > cell_old.h_max)
+            continue;
+
+        // Filter coordination rule
+        if (cell_old.if_vc_relax) {
+            double r_tmp = cell_old.min_distance(pos_add);
+            if (r_tmp > ele_tmp.r_min && r_tmp < ele_tmp.r_max) {
+                // Accept this position
+                return 1;
+            }
+        }
+    }
+
+    // Did not find a suitable posititon
+    return 0;
+}
+
+int choose_drop(const Cell &cell_old, int &rm_idx) {
+    std::uniform_int_distribution<> dist(0, cell_old.num_atm_remove - 1);
+    // Select the ith removable atom
+    int atm_id_tmp = dist(gcmc::rng);
+    for (int t1 = 0; t1 < cell_old.num_atm; t1++) {
+        if (cell_old.atm_list[t1].if_move == 2) {
+            // Atom is removable
+            if (atm_id_tmp == 0) {
+                rm_idx = t1;
+                return 1;
+            }
+            atm_id_tmp--;
+        }
+    }
+    return 0;
+}
+
+
+int choose_swap(const Cell &cell_old, int &idx1, int &idx2) {
+    std::uniform_int_distribution<> dist(0, cell_old.num_atm_move-1);
+
+    // find the first atom to switch
+    int atm_id_tmp = dist(gcmc::rng);
+    for (int t1 = 0; t1 < cell_old.num_atm; t1++) {
+        if (cell_old.atm_list[t1].if_move >= 1) {
+            // Atom is movable
+            if (atm_id_tmp == 0) {
+                idx1 = t1;
+                break;
+            }
+            atm_id_tmp--;
+        }
+    }
+
+    // find the second atom to switch
+    int num_move_distinct = cell_old.num_atm_move - cell_old.num_ele_each_move[cell_old.atm_list[idx1].type];
+    atm_id_tmp = dist(gcmc::rng, decltype(dist)::param_type(0, num_move_distinct-1));
+    for (int t1 = 0; t1 < cell_old.num_atm; t1++) {
+        if (cell_old.atm_list[t1].if_move >= 1 && cell_old.atm_list[t1].type != cell_old.atm_list[idx1].type) {
+            // Atom is movable
+            if (atm_id_tmp == 0) {
+                idx2 = t1;
+                return 1;
+            }
+            atm_id_tmp--;
+        }
+    }
+    return 0;
+}
+
+
+void mc :: create_new_structure(const Cell c_old, Cell& c_new) {
 	c_new = c_old;
-	double tmp_p[3];
+	double tmp_p[num_act];
 	// for examine add
-	int num_trial = 10000;
-	vec pos_add;
-	int ele_type_add;
-	int atm_id_tmp, atm_id_tmp2;
-	atom atm_tmp;
-	element ele_tmp;
-	double r_tmp;
-	double add_p_sum;
+    vec add_pos;
+    int ele_type_add;
+
 	// for exam remove and swap
-	int num_removable_ele;
+    int rm_idx;
+    int swp_idx1, swp_idx2;
 	int num_movable_ele;
+
+    double act_p_sum;
+
+    num_atm_each_change_.resize(c_new.num_ele);
+    for (int t1 = 0; t1 < c_new.num_ele; t1++)
+        num_atm_each_change_[t1] = 0;
+
 	//=======================================
 	// check if each action is accessable, and adjust p if not
 	cout<<"Begin adjust weight of actions:"<<endl;
 	//---------------------------------------
 	// check for add
-	if (act_p[0] > 0)
-	{
-		// choose type of element to add
-		add_p_sum = 0;
-		for(int t1=0; t1<c_new.num_ele; t1++)
-			add_p_sum += c_new.ele_list[t1].p_add;
-		add_p_sum = (double)rand()/RAND_MAX * add_p_sum;
-		for(int t1=0; t1<c_new.num_ele; t1++)
-		{
-			if( add_p_sum <= c_new.ele_list[t1].p_add)
-			{
-				ele_type_add = t1;
-				ele_tmp = c_new.ele_list[t1];
-				break;
-			}
-			else
-			{
-				add_p_sum -= c_new.ele_list[t1].p_add;
-			}
-		}
-		for(int t1=0; t1<num_trial; t1++)
-		{
-			// choose where attemp to add
-			atm_id_tmp = rand()%c_new.num_atm;
-			atm_tmp = c_new.atm_list[atm_id_tmp];
-			pos_add = atm_tmp.pos + pos_add.rand_norm()*(ele_tmp.r_min + (double)rand()/RAND_MAX*(ele_tmp.r_max - ele_tmp.r_min));
-			c_new.min_distance(pos_add, r_tmp, atm_id_tmp);
-			// if do vc-relax, then only need to satisfy coordination rule, otherwise new position has to be between r_min and r_max
-			if (r_tmp>ele_tmp.r_min && r_tmp<ele_tmp.r_max && (c_new.if_vc_relax || (pos_add.x[2] > c_new.h_min && pos_add.x[2] < c_new.h_max))) {
-                // Check the xy-coordinate range
-                vec frac_pos = c_new.to_crystal(pos_add);
-                if (c_new.a_min < frac_pos[0] && frac_pos[0] < c_new.a_max &&
-                    c_new.b_min < frac_pos[1] && frac_pos[1] < c_new.b_max) {
-				    break;
-                }
-            }
-		}
-		if (r_tmp>ele_tmp.r_min && r_tmp<ele_tmp.r_max && (c_new.if_vc_relax || (pos_add.x[2] > c_new.h_min && pos_add.x[2] < c_new.h_max)))
-			tmp_p[0] = act_p[0];
-		else
-		{
-			tmp_p[0] = 0;
-			cout<<"    Can not find site to add atom, weight of choosing to add is set to 0"<<endl;
-		}
-	}
-	else
-		tmp_p[0] = 0;
+    if (choose_add(c_old, add_pos, ele_type_add)) {
+        tmp_p[0] = act_p[0];
+    } else {
+        cout << "    Can not find site to add atom, weight of choosing to add is set to 0" << endl;
+        tmp_p[0] = 0.;
+    }
+
 	//---------------------------------------
 	// check for remove
-	if (act_p[1] > 0)
-	{
-		num_removable_ele = 0;
-		for (int t1=0; t1<c_new.num_ele; t1++)
-		{
-			if (c_new.num_ele_each_remove[t1] > 0)
-				num_removable_ele++;
-		}
-		if (num_removable_ele >= 1)
-			tmp_p[1] = act_p[1];
-		else
-		{
-			tmp_p[1] = 0;
-			cout<<"    Can not find removable elements, weight of choosing to remove set to 0"<<endl;
-		}
-	}
-	else
-		tmp_p[1] = 0;
+    if (c_new.num_atm_remove > 0) {
+        tmp_p[1] = act_p[1];
+    } else {
+        tmp_p[1] = 0;
+        cout << "    Can not find removable elements, weight of choosing to remove set to 0" << endl;
+    }
+
 	// check for swap
-	if (act_p[2] > 0)
-	{
-		num_movable_ele = 0;
-		for (int t1=0; t1<c_new.num_ele; t1++)
-		{
-			if (c_new.num_ele_each_move[t1] > 0)
-				num_movable_ele++;
-		}
-		if (num_movable_ele >= 2)
-			tmp_p[2] = act_p[2];
-		else
-		{
-			tmp_p[2] = 0;
-			cout<<"    Can not find more than one movable elements, weight of choosing to swap is set to 0"<<endl;
-		}
-	}
-	else
-		tmp_p[2] = 0;
-	cout<<"    New weight of each action is:"<<endl;
-	cout<<"    Add: "<<tmp_p[0]<<"    Remove: "<<tmp_p[1]<<"    Swap: "<<tmp_p[2]<<endl;
-	cout<<"End adjust weight of actions"<<endl<<endl;
+    num_movable_ele = 0;
+    for (int t1 = 0; t1 < c_new.num_ele; t1++) {
+        if (c_new.num_ele_each_move[t1] > 0)
+            num_movable_ele++;
+    }
+    if (num_movable_ele >= 2) {
+        tmp_p[2] = act_p[2];
+    } else {
+        tmp_p[2] = 0;
+        cout<<"    Can not find more than one movable elements, weight of choosing to swap is set to 0"<<endl;
+    }
+
+    cout << "    New weight of each action is:" << endl;
+    cout << "    Add: " << tmp_p[0];
+    cout << "    Remove: " << tmp_p[1];
+    cout << "    Swap: " << tmp_p[2] << endl;
+	cout << "End adjust weight of actions" << endl << endl;
+
 	//=======================================
 	// create new structure
 	// decide which action to choose
-	add_p_sum = 0;
-	for(int t1=0; t1<3; t1++)
-		add_p_sum += tmp_p[t1];
-	// exit if no actions are allowed
-	if (fabs(add_p_sum) <= 1e-10)
+    act_p_sum = 0;
+    for(int t1 = 0; t1 < num_act; t1++)
+        act_p_sum += tmp_p[t1];
+
+    // exit if no actions are allowed
+    if (fabs(act_p_sum) <= 1e-10)
 	{
 		cout<<"Error: No actions are legal"<<endl;
 		exit(EXIT_FAILURE);
 	}
-	add_p_sum = (double)rand()/RAND_MAX * add_p_sum;
-	act_type = -1;
-	for(int t1=0; t1<3; t1++)
-	{
-		if(add_p_sum < tmp_p[t1])
-		{
-			act_type=t1;
-			break;
-		}
-		else
-		{
-			add_p_sum -= tmp_p[t1];
-		}
-	}
+
+    act_p_sum = (double)rand()/RAND_MAX * act_p_sum;
+    act_type_ = -1;
+    for (int t1 = 0; t1 < num_act; t1++) {
+        act_p_sum -= tmp_p[t1];
+        if (act_p_sum < 0) {
+            act_type_ = t1;
+            break;
+        }
+    }
+
+
 	// start applying change
 	//=======================================
-	for (int t1=0; t1<num_ele; t1++)
-		num_atm_each_change[t1] = 0;
-	switch(act_type)
+	switch(act_type_)
 	{
 		//---------------------------------------
 		// add
 		case 0:
 		{
-			num_atm_each_change[ele_type_add] = 1;
-			// adjust pos_add so it is in the cell
-			vec bb[3];
-			double coef_bb[3];
-			bb[0] = (c_new.latt[1]^c_new.latt[2])/((c_new.latt[1]^c_new.latt[2])*c_new.latt[0]);
-			bb[1] = (c_new.latt[2]^c_new.latt[0])/((c_new.latt[1]^c_new.latt[2])*c_new.latt[0]);
-			bb[2] = (c_new.latt[0]^c_new.latt[1])/((c_new.latt[1]^c_new.latt[2])*c_new.latt[0]);
-			for(int t1=0; t1<3; t1++)
-			{
-				coef_bb[t1] = pos_add*bb[t1];
-				coef_bb[t1] -= floor(coef_bb[t1]);
-			}
-			pos_add = c_new.latt[0]*coef_bb[0]+c_new.latt[1]*coef_bb[1]+c_new.latt[2]*coef_bb[2];
-			c_new.ad_atom(pos_add,ele_type_add);
-			cout<<"Atom added, +"<<c_new.num_atm<<" "<<c_new.ele_list[ele_type_add].sym<<", position is "<<pos_add<<endl;
+			num_atm_each_change_[ele_type_add] = 1;
+			c_new.ad_atom(add_pos, ele_type_add);
+			cout << "Atom added, +"<<c_new.num_atm<<" "<<c_new.ele_list[ele_type_add].sym<<", position is "<<add_pos<<endl;
 			break;
 		}
 		//---------------------------------------
 		// remove
 		case 1:
 		{
-			// find which removable atom to remove
-			atm_id_tmp = rand()%c_new.num_atm_remove;
-			for(int t1=0; t1<c_new.num_atm; t1++)
-			{
-				if(atm_id_tmp == 0 && c_new.atm_list[t1].if_move == 2)
-				{
-					atm_id_tmp = t1;
-					break;
-				}
-				else if (c_new.atm_list[t1].if_move == 2)
-				{
-					atm_id_tmp--;
-				}
-			}
-			num_atm_each_change[c_old.atm_list[atm_id_tmp].type] = -1;
-			c_new.rm_atom(atm_id_tmp);
-			cout<<"Atom removed, -"<<atm_id_tmp+1<<" "<<c_old.atm_list[atm_id_tmp].ele->sym<<endl;
-			break;
+            choose_drop(c_new, rm_idx);
+            num_atm_each_change_[c_old.atm_list[rm_idx].type] = -1;
+            c_new.rm_atom(rm_idx);
+            cout<<"Atom removed, -"<<rm_idx+1<<" "<<c_old.atm_list[rm_idx].ele->sym<<endl;
+            break;
 		}
 		//---------------------------------------
 		// swap
@@ -232,36 +264,9 @@ void mc :: create_new_structure(const Cell c_old, Cell& c_new)
 			cout<<"Perform swap "<<iter_swap<<" times:"<<endl;
 			for(int t_swap=0; t_swap<iter_swap; t_swap++)
 			{
-				// find the first atom to switch
-				atm_id_tmp = rand()%c_new.num_atm_move;
-				for(int t1=0; t1<c_new.num_atm; t1++)
-				{
-					if(atm_id_tmp == 0 && c_new.atm_list[t1].if_move >= 1)
-					{
-						atm_id_tmp = t1;
-						break;
-					}
-					else if (c_new.atm_list[t1].if_move >= 1)
-					{
-						atm_id_tmp--;
-					}
-				}
-				// find the second atom to switch
-				atm_id_tmp2 = rand()%(c_new.num_atm_move - c_new.num_ele_each_move[c_new.atm_list[atm_id_tmp].type]);
-				for(int t1=0; t1<c_new.num_atm; t1++)
-				{
-					if(atm_id_tmp2 == 0 && c_new.atm_list[t1].if_move >= 1 && c_new.atm_list[t1].type != c_new.atm_list[atm_id_tmp].type)
-					{
-						atm_id_tmp2 = t1;
-						break;
-					}
-					else if (c_new.atm_list[t1].if_move >= 1 && c_new.atm_list[t1].type != c_new.atm_list[atm_id_tmp].type)
-					{
-						atm_id_tmp2--;
-					}
-				}
-				c_new.sp_atom(atm_id_tmp,atm_id_tmp2);
-				cout<<"Atoms swapped, "<<atm_id_tmp+1<<" "<<c_old.atm_list[atm_id_tmp].ele->sym<<" <--> "<<atm_id_tmp2+1<<" "<<c_old.atm_list[atm_id_tmp2].ele->sym<<endl;
+                choose_swap(c_new, swp_idx1, swp_idx2);
+				c_new.sp_atom(swp_idx1, swp_idx2);
+				cout<<"Atoms swapped, "<<swp_idx1+1<<" "<<c_old.atm_list[swp_idx1].ele->sym<<" <--> "<<swp_idx2+1<<" "<<c_old.atm_list[swp_idx2].ele->sym<<endl;
 			}
 			break;
 		}
@@ -283,95 +288,83 @@ void mc :: save_opt_structure(const Cell c_new)
 	cout<<"Initialized the minimum seeker to the starting structure"<<endl;
 }
 
-int mc :: check_if_accept(Cell& c_old, Cell& c_new)
-{
+int mc :: check_if_accept(Cell& c_old, Cell& c_new) {
 	double exp_pre, exp_main;
 
 	// calculate formation energy
-	e1 = c_old.energy;
-	e2 = c_new.energy;
-	for(int t1=0; t1<c_old.num_atm; t1++)
-		e1 -= c_old.atm_list[t1].ele->mu;
-	for(int t1=0; t1<c_new.num_atm; t1++)
-		e2 -= c_new.atm_list[t1].ele->mu;
+    e_old_ = c_old.energy;
+    e_trial_ = c_new.energy;
+    for (int t1 = 0; t1 < c_old.num_atm; t1++)
+        e_old_ -= c_old.atm_list[t1].ele->mu;
+    for (int t1 = 0; t1 < c_new.num_atm; t1++)
+        e_trial_ -= c_new.atm_list[t1].ele->mu;
+
 	//==============================================
 	cout<<endl<<"Evaluating whether to accept new structure"<<endl;
-	if (fabs(c_new.energy) < 1e-9)
-	{
-		accept = 0;
-		cout<<"    Warning: SCF of new structure does not converge"<<endl;
-		cout<<"    ====Rejected===="<<endl;
+    if (fabs(c_new.energy) < 1e-9) {
+        accept_ = false;
+        cout << "    Warning: SCF of new structure does not converge" << endl;
+        cout << "    ====Rejected====" << endl;
+        return 0;
 	}
-	else
-	{
-		switch (act_type)
-		{
-			//---------------------------------------
-			// add,remove, and swap
-			case 0:
-			case 1:
-			case 2:
-			{
-				// calculate prefactor and exp
-				exp_pre = 1;
-				for(int t1=0; t1<num_ele; t1++)
-				{
-//					if(c_new.if_change_v)
-//						exp_pre *= ( pow(c_new.vol,num_atm_each_change[t1])*factor(c_old.num_ele_each[t1])/pow(c_old.ele_list[t1].rho,-num_atm_each_change[t1])/factor(num_atm_each_change[t1]+c_old.num_ele_each[t1]) );
-//					else
-//					{
-						c_old.ele_list[t1].update_tb(temperature);
-						c_new.ele_list[t1].update_tb(temperature);
-						exp_pre *= ( pow(c_new.get_volume(),num_atm_each_change[t1])*factor(c_old.num_ele_each[t1])/pow(c_old.ele_list[t1].tb,3*num_atm_each_change[t1])/factor(num_atm_each_change[t1]+c_old.num_ele_each[t1]) );
-//					}
-				}
-				// if allow V to change, multiply exp_pre by (V_new/V_old)^N_tot(old)
-				if(c_new.if_change_v)
-					exp_pre *= pow((c_new.get_volume()/c_old.get_volume()),c_old.num_atm);
-				exp_main = exp((e1-e2)/temperature/kb);
-				cout<<"    Pre. factor: "<<exp_pre<<"    exp. factor: "<<exp_main<<"    total factor: "<<exp_pre*exp_main<<endl;
-				// start evaluating whether to accept or reject
-				if (1 < exp_pre*exp_main)
-				{
-					accept = 1;
-					cout<<"    ====Accepted===="<<endl;
-					cout<<"    New structure has lower volume-factored-in formation energy"<<endl;
-					if (e2 < opt_e)
-					{
-						opt_e = e2;
-						opt_c = c_new;
-						cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
-					}
-				}
-				else if ((double)rand()/RAND_MAX < exp_pre*exp_main)
-				{
-					accept = 1;
-					cout<<"    ----Accepted----"<<endl;
-					cout<<"    New structure has highter volume-factored-in formation energy"<<endl;
-					if (e2 < opt_e)
-					{
-						opt_e = e2;
-						opt_c = c_new;
-						cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
-					}
-				}
-				else
-				{
-					accept = 0;
-					cout<<"    ----Rejected----"<<endl;
-				}
-				break;
-			}
-			//---------------------------------------
-			default:
-			{
-				cout<<"Error: Invalid action number: "<<act_type<<endl;
-				exit(EXIT_FAILURE);
-			}
-		}
-	}
-	cout<<"Best formation energy is "<<setw(20)<<setprecision(9)<<opt_e<<" eV"<<endl;
-	return accept;
+
+    // Check optimal structure
+    if (e_trial_ < opt_e) {
+        opt_e = e_trial_;
+        opt_c = c_new;
+        cout<<"    New structure has by far the lowest formation energy, best structure updated"<<endl;
+    }
+
+    switch (act_type_) {
+    //---------------------------------------
+    // add,remove, and swap
+    case 0:
+    case 1:
+    case 2:
+    {
+        // calculate prefactor and exp
+        exp_pre = 1;
+        for (int t1 = 0; t1 < c_old.num_ele; t1++) {
+            c_old.ele_list[t1].update_tb(temperature);
+            c_new.ele_list[t1].update_tb(temperature);
+            exp_pre *= pow(c_new.get_volume(), num_atm_each_change_[t1]);
+            exp_pre *= factor(c_old.num_ele_each[t1]) / factor(num_atm_each_change_[t1] + c_old.num_ele_each[t1]);
+            exp_pre /= pow(c_old.ele_list[t1].tb, 3*num_atm_each_change_[t1]);
+        }
+
+        // if allow V to change, multiply exp_pre by (V_new/V_old)^N_tot(old)
+        if(c_new.if_change_v)
+            exp_pre *= pow((c_new.get_volume()/c_old.get_volume()), c_old.num_atm);
+
+        exp_main = exp(-(e_trial_-e_old_)/temperature/KB_EV);
+
+        cout<<"    Pre. factor: "<<exp_pre<<"    exp. factor: "<<exp_main<<"    total factor: "<<exp_pre*exp_main<<endl;
+
+        // start evaluating whether to accept or reject
+        if (1 < exp_pre*exp_main) {
+            accept_ = true;
+            cout<<"    ====Accepted===="<<endl;
+            cout<<"    New structure has lower volume-factored-in formation energy"<<endl;
+        } else if ((double)rand()/RAND_MAX < exp_pre*exp_main) {
+            accept_ = true;
+            cout<<"    ----Accepted----"<<endl;
+            cout<<"    New structure has highter volume-factored-in formation energy"<<endl;
+        } else {
+            accept_ = false;
+            cout<<"    ----Rejected----"<<endl;
+        }
+        break;
+    }
+    //---------------------------------------
+    default:
+    {
+        cout<<"Error: Invalid action number: "<<act_type<<endl;
+        exit(EXIT_FAILURE);
+    }
+    }
+
+    cout<<"Best formation energy is "<<setw(20)<<setprecision(9)<<opt_e<<" eV"<<endl;
+    return accept_;
 }
 
 int mc :: factor(int n)
@@ -386,6 +379,38 @@ int mc :: factor(int n)
 	else
 		return factor(n-1);
 }
+
+
+void mc::log_header(std::ostream &log, const Cell &cell) const {
+    log << setw(9) << "Iteration";
+    for (int t1 = 0; t1 < cell.num_ele; t1++)
+        log << setw(4) << cell.ele_list[t1].sym;
+    log << setw(20) << "DFT_E";
+    log << setw(20) << "Trial_E_f";
+    log << setw(20) << "Previous_E_f";
+    log << setw(20) << "Accept_E_f";
+    log << setw(20) << "Optimal_E_f";
+    log << setw(14) << "If_accept" << endl;
+}
+
+
+void mc::log_step(std::ostream &log, const Cell &cell, int iter) const {
+    log << setw(9) << iter;
+    for(int t1 = 0; t1 < cell.num_ele; t1++)
+        log << setw(4) << cell.num_ele_each[t1];
+    log << fixed << setprecision(9) << setw(20) << cell.energy;
+    log << setw(20) << e_trial_;
+    log << setw(20) << e_old_;
+    if (accept_) {
+        log << setw(20) << e_trial_;
+    } else {
+        log << setw(20) << e_old_;
+    }
+
+    log << setw(20) << opt_e;
+    log << setw(14) << accept_ << endl;
+}
+
 
 void mc :: print()
 {

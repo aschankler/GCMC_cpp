@@ -2,9 +2,9 @@
 #include <iomanip>
 #include <fstream>
 #include <sstream>
-#include <cstdlib>
 #include <cmath>
 #include "vec.h"
+#include "rng.h"
 
 void vec :: import(double *a)
 {
@@ -18,7 +18,7 @@ void vec :: clean()
 	x[0] = x[1] = x[2] = 0;
 }
 
-vec  vec :: operator+(const vec& B)
+vec  vec :: operator+(const vec& B) const
 {
 	vec res;
 	res.x[0] = x[0] + B.x[0];
@@ -27,7 +27,7 @@ vec  vec :: operator+(const vec& B)
 	return res;
 }
 
-vec  vec :: operator-(const vec& B)
+vec  vec :: operator-(const vec& B) const
 {
 	vec res;
 	res.x[0] = x[0] - B.x[0];
@@ -36,7 +36,7 @@ vec  vec :: operator-(const vec& B)
 	return res;
 }
 
-vec  vec :: operator*(const double& B)
+vec  vec :: operator*(const double& B) const
 {
 	vec res;
 	res.x[0] = x[0]*B;
@@ -45,7 +45,7 @@ vec  vec :: operator*(const double& B)
 	return res;
 }
 
-vec  vec :: operator/(const double& B)
+vec  vec :: operator/(const double& B) const
 {
 	vec res;
 	res.x[0] = x[0]/B;
@@ -70,14 +70,14 @@ vec & vec :: operator=(double* B)
 	return *this;
 }
 
-double vec :: operator*(const vec& B)
+double vec :: operator*(const vec& B) const
 {
 	double res = 0;
 	res = x[0]*B.x[0] + x[1]*B.x[1] + x[2]*B.x[2];
 	return res;
 }
 
-vec vec :: operator^(const vec& B)
+vec vec :: operator^(const vec& B) const
 {
 	vec res;
 	res.x[0] = x[1]*B.x[2] - x[2]*B.x[1];
@@ -100,13 +100,13 @@ std::istream& operator>>(std::istream& in, vec &B)
     return in;
 }
 
-std::ostream& operator<<(std::ostream& out, vec B)
+std::ostream& operator<<(std::ostream& out, const vec &B)
 {
     out<<B.x[0]<<'\t'<<B.x[1]<<'\t'<<B.x[2];
     return out;
 }
 
-std::ofstream& operator<<(std::ofstream& out, vec B)
+std::ofstream& operator<<(std::ofstream& out, const vec &B)
 {
     //out<<B.x[0]<<'\t'<<B.x[1]<<'\t'<<B.x[2];
     out<<std::fixed<<std::setw(22)<<std::setprecision(15)<<B.x[0]<<std::setw(22)<<std::setprecision(15)<<B.x[1]<<std::setw(22)<<std::setprecision(15)<<B.x[2];
@@ -126,18 +126,22 @@ double vec :: norm()
 	return sqrt(res);
 }
 
-vec vec :: rand_norm()
+
+vec &vec::rand() {
+    x[0] = gcmc::rand_uniform();
+    x[1] = gcmc::rand_uniform();
+    x[2] = gcmc::rand_uniform();
+    return *this;
+}
+
+
+vec &vec :: rand_norm()
 {
-	x[0] = (double)rand()/RAND_MAX;
-	x[1] = (double)rand()/RAND_MAX;
-	x[2] = (double)rand()/RAND_MAX;
-	while (this->norm() > 1)
-	{
-		x[0] = (double)rand()/RAND_MAX;
-		x[1] = (double)rand()/RAND_MAX;
-		x[2] = (double)rand()/RAND_MAX;
-	}
-	return (*this);
+    this->rand();
+    while (this->norm() > 1) {
+        this->rand();
+    }
+    return *this;
 }
 
 //==========debug================

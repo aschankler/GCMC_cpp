@@ -69,7 +69,8 @@ class Cell {
 
     // calculation with input
     void update_tb(double T);
-    void min_distance(vec pos, double& rr, int& ind);
+    double min_distance(vec) const;
+    double min_distance(vec, int&) const;
 
     void print();
 
