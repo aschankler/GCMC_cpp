@@ -17,28 +17,29 @@
 
 using namespace std;
 
-void mc :: read_from_in(ifstream& in)
-{
-	string label_act_p = "begin_action_probability";
-	string tmp;
-	stringstream ss;
+void mc :: read_from_in(ifstream& in) {
+    string label_act_p = "begin_action_probability";
+    string tmp;
+    stringstream ss;
 
-	read(in,"max_iter",'=',max_iter);
-	read(in,"temperature",'=',temperature);
-	read(in,"if_test",'=',if_test);
+    read(in,"max_iter",'=',max_iter);
+    read(in,"temperature",'=',temperature);
+    read(in,"if_test",'=',if_test);
 
-	// get action probability
-	in.seekg(ios::beg); in.clear();
-	while(getline(in, tmp))
-		if(tmp.find(label_act_p) != string::npos)
-			break;
-	for(int t1=0; t1<num_act; t1++)
-		in>>act_p[t1];
-	in.clear(); in.seekg(ios::beg);
+    // get action probability
+    in.seekg(ios::beg);
+    in.clear();
+    while(getline(in, tmp))
+        if(tmp.find(label_act_p) != string::npos)
+            break;
+    for(int t1=0; t1<num_act; t1++)
+        in>>act_p[t1];
+    in.clear();
+    in.seekg(ios::beg);
 
-	// initialize other parameters
-	act_type = -1;
-	opt_e = 0;
+    // initialize other parameters
+    act_type = -1;
+    opt_e = 0;
 }
 
 
@@ -74,8 +75,8 @@ int choose_add(const Cell &cell_old, vec &pos_add, int &ele_type) {
 
         // Filter xy-coordinate range
         if (not (cell_old.a_min < pos_add[0] && pos_add[0] < cell_old.a_max
-            && cell_old.b_min < pos_add[1] && pos_add[1] < cell_old.b_max)
-        ) {
+                 && cell_old.b_min < pos_add[1] && pos_add[1] < cell_old.b_max)
+           ) {
             continue;
         }
 
@@ -150,16 +151,16 @@ int choose_swap(const Cell &cell_old, int &idx1, int &idx2) {
 
 
 void mc :: create_new_structure(const Cell c_old, Cell& c_new) {
-	c_new = c_old;
-	double tmp_p[num_act];
-	// for examine add
+    c_new = c_old;
+    double tmp_p[num_act];
+    // for examine add
     vec add_pos;
     int ele_type_add;
 
-	// for exam remove and swap
+    // for exam remove and swap
     int rm_idx;
     int swp_idx1, swp_idx2;
-	int num_movable_ele;
+    int num_movable_ele;
 
     double act_p_sum;
 
@@ -167,11 +168,11 @@ void mc :: create_new_structure(const Cell c_old, Cell& c_new) {
     for (int t1 = 0; t1 < c_new.num_ele; t1++)
         num_atm_each_change_[t1] = 0;
 
-	//=======================================
-	// check if each action is accessable, and adjust p if not
-	cout<<"Begin adjust weight of actions:"<<endl;
-	//---------------------------------------
-	// check for add
+    //=======================================
+    // check if each action is accessable, and adjust p if not
+    cout<<"Begin adjust weight of actions:"<<endl;
+    //---------------------------------------
+    // check for add
     if (choose_add(c_old, add_pos, ele_type_add)) {
         tmp_p[0] = act_p[0];
     } else {
@@ -179,8 +180,8 @@ void mc :: create_new_structure(const Cell c_old, Cell& c_new) {
         tmp_p[0] = 0.;
     }
 
-	//---------------------------------------
-	// check for remove
+    //---------------------------------------
+    // check for remove
     if (c_new.num_atm_remove > 0) {
         tmp_p[1] = act_p[1];
     } else {
@@ -188,7 +189,7 @@ void mc :: create_new_structure(const Cell c_old, Cell& c_new) {
         cout << "    Can not find removable elements, weight of choosing to remove set to 0" << endl;
     }
 
-	// check for swap
+    // check for swap
     num_movable_ele = 0;
     for (int t1 = 0; t1 < c_new.num_ele; t1++) {
         if (c_new.num_ele_each_move[t1] > 0)
@@ -205,21 +206,20 @@ void mc :: create_new_structure(const Cell c_old, Cell& c_new) {
     cout << "    Add: " << tmp_p[0];
     cout << "    Remove: " << tmp_p[1];
     cout << "    Swap: " << tmp_p[2] << endl;
-	cout << "End adjust weight of actions" << endl << endl;
+    cout << "End adjust weight of actions" << endl << endl;
 
-	//=======================================
-	// create new structure
-	// decide which action to choose
+    //=======================================
+    // create new structure
+    // decide which action to choose
     act_p_sum = 0;
     for(int t1 = 0; t1 < num_act; t1++)
         act_p_sum += tmp_p[t1];
 
     // exit if no actions are allowed
-    if (fabs(act_p_sum) <= 1e-10)
-	{
-		cout<<"Error: No actions are legal"<<endl;
-		exit(EXIT_FAILURE);
-	}
+    if (fabs(act_p_sum) <= 1e-10) {
+        cout<<"Error: No actions are legal"<<endl;
+        exit(EXIT_FAILURE);
+    }
 
     act_p_sum = (double)rand()/RAND_MAX * act_p_sum;
     act_type_ = -1;
@@ -232,66 +232,59 @@ void mc :: create_new_structure(const Cell c_old, Cell& c_new) {
     }
 
 
-	// start applying change
-	//=======================================
-	switch(act_type_)
-	{
-		//---------------------------------------
-		// add
-		case 0:
-		{
-			num_atm_each_change_[ele_type_add] = 1;
-			c_new.ad_atom(add_pos, ele_type_add);
-			cout << "Atom added, +"<<c_new.num_atm<<" "<<c_new.ele_list[ele_type_add].sym<<", position is "<<add_pos<<endl;
-			break;
-		}
-		//---------------------------------------
-		// remove
-		case 1:
-		{
-            choose_drop(c_new, rm_idx);
-            num_atm_each_change_[c_old.atm_list[rm_idx].type] = -1;
-            c_new.rm_atom(rm_idx);
-            cout<<"Atom removed, -"<<rm_idx+1<<" "<<c_old.atm_list[rm_idx].ele->sym<<endl;
-            break;
-		}
-		//---------------------------------------
-		// swap
-		case 2:
-		{
-			//int iter_swap = rand()%c_old.num_atm+1;
-			int iter_swap = 1; // only swap one pair
-			cout<<"Perform swap "<<iter_swap<<" times:"<<endl;
-			for(int t_swap=0; t_swap<iter_swap; t_swap++)
-			{
-                choose_swap(c_new, swp_idx1, swp_idx2);
-				c_new.sp_atom(swp_idx1, swp_idx2);
-				cout<<"Atoms swapped, "<<swp_idx1+1<<" "<<c_old.atm_list[swp_idx1].ele->sym<<" <--> "<<swp_idx2+1<<" "<<c_old.atm_list[swp_idx2].ele->sym<<endl;
-			}
-			break;
-		}
-		//---------------------------------------
-		default:
-		{
-			cout<<"Error: Undifined action type: "<<act_type<<endl;
-			exit(EXIT_FAILURE);
-		}
-	}
+    // start applying change
+    //=======================================
+    switch(act_type_) {
+    //---------------------------------------
+    // add
+    case 0: {
+        num_atm_each_change_[ele_type_add] = 1;
+        c_new.ad_atom(add_pos, ele_type_add);
+        cout << "Atom added, +"<<c_new.num_atm<<" "<<c_new.ele_list[ele_type_add].sym<<", position is "<<add_pos<<endl;
+        break;
+    }
+    //---------------------------------------
+    // remove
+    case 1: {
+        choose_drop(c_new, rm_idx);
+        num_atm_each_change_[c_old.atm_list[rm_idx].type] = -1;
+        c_new.rm_atom(rm_idx);
+        cout<<"Atom removed, -"<<rm_idx+1<<" "<<c_old.atm_list[rm_idx].ele->sym<<endl;
+        break;
+    }
+    //---------------------------------------
+    // swap
+    case 2: {
+        //int iter_swap = rand()%c_old.num_atm+1;
+        int iter_swap = 1; // only swap one pair
+        cout<<"Perform swap "<<iter_swap<<" times:"<<endl;
+        for(int t_swap=0; t_swap<iter_swap; t_swap++) {
+            choose_swap(c_new, swp_idx1, swp_idx2);
+            c_new.sp_atom(swp_idx1, swp_idx2);
+            cout<<"Atoms swapped, "<<swp_idx1+1<<" "<<c_old.atm_list[swp_idx1].ele->sym<<" <--> "<<swp_idx2+1<<" "<<c_old.atm_list[swp_idx2].ele->sym<<endl;
+        }
+        break;
+    }
+    //---------------------------------------
+    default: {
+        cout<<"Error: Undifined action type: "<<act_type<<endl;
+        exit(EXIT_FAILURE);
+    }
+    }
 }
 
-void mc :: save_opt_structure(const Cell c_new)
-{
-	opt_e = c_new.energy;
-	for(int t1=0; t1<c_new.num_atm; t1++)
-		opt_e -= c_new.atm_list[t1].ele->mu;
-	opt_c = c_new;
-	cout<<"Initialized the minimum seeker to the starting structure"<<endl;
+void mc :: save_opt_structure(const Cell c_new) {
+    opt_e = c_new.energy;
+    for(int t1=0; t1<c_new.num_atm; t1++)
+        opt_e -= c_new.atm_list[t1].ele->mu;
+    opt_c = c_new;
+    cout<<"Initialized the minimum seeker to the starting structure"<<endl;
 }
 
 int mc :: check_if_accept(Cell& c_old, Cell& c_new) {
-	double exp_pre, exp_main;
+    double exp_pre, exp_main;
 
-	// calculate formation energy
+    // calculate formation energy
     e_old_ = c_old.energy;
     e_trial_ = c_new.energy;
     for (int t1 = 0; t1 < c_old.num_atm; t1++)
@@ -299,14 +292,14 @@ int mc :: check_if_accept(Cell& c_old, Cell& c_new) {
     for (int t1 = 0; t1 < c_new.num_atm; t1++)
         e_trial_ -= c_new.atm_list[t1].ele->mu;
 
-	//==============================================
-	cout<<endl<<"Evaluating whether to accept new structure"<<endl;
+    //==============================================
+    cout<<endl<<"Evaluating whether to accept new structure"<<endl;
     if (fabs(c_new.energy) < 1e-9) {
         accept_ = false;
         cout << "    Warning: SCF of new structure does not converge" << endl;
         cout << "    ====Rejected====" << endl;
         return 0;
-	}
+    }
 
     // Check optimal structure
     if (e_trial_ < opt_e) {
@@ -320,8 +313,7 @@ int mc :: check_if_accept(Cell& c_old, Cell& c_new) {
     // add,remove, and swap
     case 0:
     case 1:
-    case 2:
-    {
+    case 2: {
         // calculate prefactor and exp
         exp_pre = 1;
         for (int t1 = 0; t1 < c_old.num_ele; t1++) {
@@ -356,8 +348,7 @@ int mc :: check_if_accept(Cell& c_old, Cell& c_new) {
         break;
     }
     //---------------------------------------
-    default:
-    {
+    default: {
         cout<<"Error: Invalid action number: "<<act_type<<endl;
         exit(EXIT_FAILURE);
     }
@@ -367,17 +358,15 @@ int mc :: check_if_accept(Cell& c_old, Cell& c_new) {
     return accept_;
 }
 
-int mc :: factor(int n)
-{
-	if (n < 0)
-	{
-		cout<<"Error: Number of atoms should not be negative"<<endl;
-		exit(EXIT_FAILURE);
-	}
-	if (n==0)
-		return 1;
-	else
-		return factor(n-1);
+int mc :: factor(int n) {
+    if (n < 0) {
+        cout<<"Error: Number of atoms should not be negative"<<endl;
+        exit(EXIT_FAILURE);
+    }
+    if (n==0)
+        return 1;
+    else
+        return factor(n-1);
 }
 
 
@@ -412,13 +401,12 @@ void mc::log_step(std::ostream &log, const Cell &cell, int iter) const {
 }
 
 
-void mc :: print()
-{
-	cout<<"Max iteration: "<<max_iter<<endl;
-	cout<<"Simulation temperature: "<<temperature<<endl;
-	cout<<"If running test: "<<if_test<<endl;
-	cout<<"Action probability: "<<endl;
-	for(int t1=0; t1<num_act; t1++)
-		cout<<'\t'<<act_p[t1];
-	cout<<endl;
+void mc :: print() {
+    cout<<"Max iteration: "<<max_iter<<endl;
+    cout<<"Simulation temperature: "<<temperature<<endl;
+    cout<<"If running test: "<<if_test<<endl;
+    cout<<"Action probability: "<<endl;
+    for(int t1=0; t1<num_act; t1++)
+        cout<<'\t'<<act_p[t1];
+    cout<<endl;
 }
