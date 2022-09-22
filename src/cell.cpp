@@ -59,11 +59,12 @@ void Cell::read_from_in(ifstream& in) {
         if(tmp.find(label_lat) != string::npos)
             break;
     in>>latt[0]>>latt[1]>>latt[2];
-    latt_inv[0] = (latt[1]^latt[2])/((latt[0]^latt[1])*latt[2]);
-    latt_inv[1] = (latt[2]^latt[0])/((latt[0]^latt[1])*latt[2]);
-    latt_inv[2] = (latt[0]^latt[1])/((latt[0]^latt[1])*latt[2]);
     in.clear();
     in.seekg(ios::beg);
+
+    count_move_atoms();
+    update_lat_inv();
+    update_volume();
 }
 
 void Cell::read_output(int calculator_type) {
@@ -385,6 +386,13 @@ void Cell::update_lat_inv() {
 }
 
 
+void Cell::update_temperature(double temperature) {
+    for (int i = 0; i < num_ele; i++) {
+        ele_list[i].update_tb(temperature);
+    }
+}
+
+
 const vec Cell::to_crystal(const vec& pos) const {
     vec crystal_coord;
     crystal_coord.clean();
@@ -483,7 +491,7 @@ double Cell::min_distance(vec pos) const {
     return min_distance(pos, min_idx);
 }
 
-void Cell :: print() {
+void Cell :: print() const {
     cout<<"Number of elements: "<<num_ele<<endl;
     cout<<"Number of atoms: "<<num_atm<<endl;
     cout<<"Threshold of height: "<<h_min<<", "<<h_max<<endl;

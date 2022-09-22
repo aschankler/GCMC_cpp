@@ -24,6 +24,6 @@ public:
 	void line_from_in(std::string tmp, std::vector<element>& ele_list);
 	void line_from_qe(std::stringstream& ss, std::vector<element>& ele_list);
 
-	void print();
+	void print() const;
 };
 #endif

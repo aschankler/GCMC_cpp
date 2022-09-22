@@ -32,7 +32,7 @@ void atom :: line_from_in(string tmp, vector<element>& ele_list)
 	}
 }
 
-void atom :: print()
+void atom :: print() const
 {
 	cout<<ele->sym<<'\t'<<pos<<'\t'<<if_move<<endl;
 //	ele->print();

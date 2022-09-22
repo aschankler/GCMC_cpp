@@ -31,8 +31,6 @@ int main()
 	calculator_control.read_from_in(input);
 
 	// initialize cell
-	sys_accept.count_move_atoms();
-	sys_accept.get_volume();
 	sys_accept.update_tb(mc_control.temperature);
 
 	// run first calculation

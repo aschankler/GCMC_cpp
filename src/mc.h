@@ -2,8 +2,59 @@
 #define __MC__
 
 #include <fstream>
+#include <memory>
 #include <vector>
 #include "cell.h"
+
+
+class MCMove {
+// Invariant: available must be called before get_new_structure,
+//  which must be called before prefactor
+  public:
+    MCMove(double w, std::string n) : weight_(w), name_(n) {}
+    double weight_;
+    std::string name_;
+    virtual bool available(const Cell&) = 0;
+    virtual Cell get_new_structure(const Cell&) = 0;
+    virtual double prefactor(const Cell &old, const Cell &trial) = 0;
+};
+
+
+class AddDropMove : public MCMove {
+  public:
+    AddDropMove(double w = 1.0, std::string n = "AddDrop")
+        : MCMove(w, n), prob_add_(0.5), prob_drop_(0.5) {}
+    AddDropMove(double wa, double wb, std::string n = "AddDrop")
+        : MCMove(wa + wb, n),
+          prob_add_(wa / (wa + wb)),
+          prob_drop_(wb / (wa + wb)) {}
+    bool available(const Cell&) override;
+    Cell get_new_structure(const Cell&) override;
+    double prefactor(const Cell &old, const Cell &trial) override;
+  private:
+    double prob_add_;
+    double prob_drop_;
+    bool add_avail_ = false;
+    bool drop_avail_ = false;
+    // Cache for add move
+    int add_type_;
+    vec add_pos_;
+    // Cache for drop move
+    int drop_type_;
+};
+
+
+class SwapMove : public MCMove {
+  public:
+    SwapMove(double w = 1., std::string n = "Swap") : MCMove(w, n) {}
+    bool available(const Cell&) override;
+    Cell get_new_structure(const Cell&) override;
+    double prefactor(const Cell &old, const Cell &trial) override;
+};
+
+
+// class DoubleMove : public MCMove {};
+
 
 class mc {
   public:
@@ -14,11 +65,7 @@ class mc {
     // if runing test
     int if_test;
     // number of action types
-    int const static num_act = 3;
-    // action probability (0, add; 1, remove; 2, swap)
-    double act_p[num_act];
-
-    int act_type;
+    int const static num_act = 2;
 
     // global optimized formation energy
     double opt_e;
@@ -27,15 +74,19 @@ class mc {
 
     void read_from_in(std::ifstream& in);
 
-    int factor(int n);
+    std::shared_ptr<MCMove> choose_next_move(const Cell&);
+    std::shared_ptr<MCMove> get_last_move() const;
+
     void create_new_structure(const Cell c_old, Cell& c_new);
     void save_opt_structure(const Cell c_new);
-    int check_if_accept(Cell& c_old, Cell& c_new);
+    bool check_if_accept(Cell& c_old, Cell& c_new);
 
     void log_header(std::ostream&, const Cell&) const;
     void log_step(std::ostream&, const Cell&, int) const;
     void print();
   private:
+    // All available moves
+    std::array<std::shared_ptr<MCMove>, num_act> moves_;
     // which action is chosen
     int act_type_;
     // formation energy of old and new structure

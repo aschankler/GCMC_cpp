@@ -59,6 +59,7 @@ class Cell {
     void update_volume();
     void update_lat_inv();
     void zero_force();
+    void update_temperature(double);
     const vec to_crystal(const vec& pos) const;
     const vec from_crystal(const vec& pos) const;
 
@@ -72,7 +73,7 @@ class Cell {
     double min_distance(vec) const;
     double min_distance(vec, int&) const;
 
-    void print();
+    void print() const;
 
   private:
     // volume of cell
