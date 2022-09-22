@@ -2,7 +2,6 @@
 #define __AUXILIARY__
 
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include <string.h>
 
@@ -11,7 +10,7 @@
  * Return value indicates whether a matching line was found
  */
 template <class T> bool read_opt(
-    std::ifstream& in, std::string keyword, char dlmt, T& save
+    std::istream& in, std::string keyword, char dlmt, T& save
 ) {
     std::string line;
     std::stringstream ss;
@@ -31,7 +30,7 @@ template <class T> bool read_opt(
 }
 
 template <> inline bool read_opt<std::string>(
-    std::ifstream& in, std::string keyword, char dlmt, std::string& save
+    std::istream& in, std::string keyword, char dlmt, std::string& save
 ) {
     std::string line;
     std::stringstream ss;
@@ -54,7 +53,7 @@ template <> inline bool read_opt<std::string>(
  * Like `read_opt` but raises error if no match found
  */
 template <class T> bool read(
-    std::ifstream& in, std::string keyword, char dlmt, T& save
+    std::istream& in, std::string keyword, char dlmt, T& save
 ) {
     bool found = read_opt<T>(in, keyword, dlmt, save);
     if (not found) {

@@ -1,7 +1,7 @@
 #ifndef __MC__
 #define __MC__
 
-#include <fstream>
+#include <istream>
 #include <memory>
 #include <vector>
 #include "cell.h"
@@ -53,7 +53,27 @@ class SwapMove : public MCMove {
 };
 
 
-// class DoubleMove : public MCMove {};
+class DoubleMove : public MCMove {
+  public:
+    DoubleMove(double w = 1., std::string n = "Double")
+        : MCMove(w, n), prob_add_(0.5), prob_drop_(0.5) {}
+    DoubleMove(double wa, double wb, std::string n = "Double")
+        : MCMove(wa + wb, n),
+          prob_add_(wa / (wa + wb)),
+          prob_drop_(wb / (wa + wb)) {}
+    bool available(const Cell&) override;
+    Cell get_new_structure(const Cell&) override;
+    double prefactor(const Cell &old, const Cell &trial) override;
+  private:
+    double prob_add_, prob_drop_;
+    bool add_avail_ = false;
+    bool drop_avail_ = false;
+    // Cache add
+    int add_type_[2];
+    vec add_pos_[2];
+    // Cache drop
+    int drop_type_[2];
+};
 
 
 class mc {
@@ -64,15 +84,13 @@ class mc {
     double temperature;
     // if runing test
     int if_test;
-    // number of action types
-    int const static num_act = 2;
 
     // global optimized formation energy
     double opt_e;
     // global optimized cell
     Cell opt_c;
 
-    void read_from_in(std::ifstream& in);
+    void read_from_in(std::istream& in);
 
     std::shared_ptr<MCMove> choose_next_move(const Cell&);
     std::shared_ptr<MCMove> get_last_move() const;
@@ -86,13 +104,11 @@ class mc {
     void print();
   private:
     // All available moves
-    std::array<std::shared_ptr<MCMove>, num_act> moves_;
+    std::vector<std::shared_ptr<MCMove>> moves_;
     // which action is chosen
     int act_type_;
     // formation energy of old and new structure
     double e_old_, e_trial_;
-    // number of atoms changed for each element
-    std::vector<int> num_atm_each_change_;
     // status of if accepted or not
     bool accept_;
 };

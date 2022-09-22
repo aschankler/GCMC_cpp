@@ -6,13 +6,16 @@
 #include <vector>
 #include <cstdlib>
 #include <cmath>
+#include <algorithm>
 #include <stdexcept>
 #include <random>
+#include <map>
 #include "mc.h"
 #include "auxiliary.h"
 #include "rng.h"
 
 
+#define EPS  1e-8
 // In eV/K
 #define KB_EV 8.6173303e-5
 
@@ -167,7 +170,7 @@ static double counting_factor(int a, int b) {
 
 static double phase_space_volume(const Cell &old, const Cell &trial) {
     double phase_vol = 1.;
-    for (int i = 0; i < old.num_ele; i ++) {
+    for (int i = 0; i < old.num_ele; i++) {
         auto e1 = old.ele_list[i];
         int dn = trial.num_ele_each[i] - old.num_ele_each[i];
         // Factor of (V/Lambda^3)^dN
@@ -286,36 +289,209 @@ double SwapMove::prefactor(const Cell &old, const Cell &trial) {
 // DoubleMove implementation
 // ----------------------------------------------------------------
 
+bool DoubleMove::available(const Cell &cell) {
+    // Drop needs two removable atoms
+    drop_avail_ = (cell.num_atm_remove >=2);
+
+    // Check if add available and cache position
+    add_avail_ = false;
+    if (choose_add(cell, add_pos_[0], add_type_[0])) {
+        // First add is available
+        Cell cell_tmp = cell;
+        cell_tmp.ad_atom(add_pos_[0], add_type_[0]);
+        // Choose second add
+        add_avail_ = choose_add(cell_tmp, add_pos_[1], add_type_[1]);
+    }
+
+    return drop_avail_ || add_avail_;
+}
+
+
+Cell DoubleMove::get_new_structure(const Cell &cell) {
+    Cell cell_new = cell;
+
+    if (add_avail_ and drop_avail_) {
+        // Choose to add or drop
+        std::uniform_real_distribution<double> dist(0., prob_add_ + prob_drop_);
+        if (dist(gcmc::rng) < prob_add_) {
+            drop_avail_ = false;  // Disable drop move
+        } else {
+            add_avail_ = false;
+        }
+    }
+
+    if (add_avail_) {
+        // Use cached addition
+        cell_new.ad_atom(add_pos_[0], add_type_[0]);
+        cout << "Atom added, +" << cell_new.num_atm;
+        cout << " " << cell_new.ele_list[add_type_[0]].sym;
+        cout << ", position is " << add_pos_[0] << endl;
+        cell_new.ad_atom(add_pos_[1], add_type_[1]);
+        cout << "Atom added, +" << cell_new.num_atm;
+        cout << " " << cell_new.ele_list[add_type_[1]].sym;
+        cout << ", position is " << add_pos_[1] << endl;
+        return cell_new;
+    }
+
+    if (drop_avail_) {
+        int rm_idx1, rm_idx2;
+        choose_drop(cell_new, rm_idx1);
+        drop_type_[0] = cell_new.atm_list[rm_idx1].type;
+        cout << "Atom removed, -" << rm_idx1+1;
+        cout << " " << cell_new.atm_list[rm_idx1].ele->sym << endl;
+        cell_new.rm_atom(rm_idx1);
+        choose_drop(cell_new, rm_idx2);
+        drop_type_[1] = cell_new.atm_list[rm_idx2].type;
+        cout << "Atom removed, -" << (rm_idx2 < rm_idx1 ? rm_idx2+1 : rm_idx2+2);
+        cout << " " << cell_new.atm_list[rm_idx2].ele->sym << endl;
+        cell_new.rm_atom(rm_idx2);
+        return cell_new;
+    }
+
+    throw std::runtime_error("Neither add nor drop valid");
+}
+
+
+double DoubleMove::prefactor(const Cell &old, const Cell &trial) {
+    double prefactor = phase_space_volume(old, trial);
+
+    double add_weight_tot = 0.;
+    for (auto elem : trial.ele_list)
+        add_weight_tot += elem.p_add;
+
+    // Prob of choosing reverse move over forward move
+    if (add_avail_) {
+        // Combinatorial factor of two is not needed as it applies to both forward and reverse move
+        // Forward move
+        prefactor /= prob_add_
+            * trial.ele_list[add_type_[0]].p_add / add_weight_tot
+            * trial.ele_list[add_type_[1]].p_add / add_weight_tot;
+        // Reverse move
+        prefactor *= prob_drop_
+            * trial.num_ele_each_remove[add_type_[0]]
+            * (add_type_[0] != add_type_[1] ? trial.num_ele_each_remove[add_type_[1]]
+                                            : trial.num_ele_each_remove[add_type_[1]]-1)
+            / trial.num_atm_remove / (trial.num_atm_remove-1);
+    } else if (drop_avail_) {
+        // Forward move
+        prefactor /= prob_drop_
+            * old.num_ele_each_remove[drop_type_[0]]
+            * (drop_type_[0] != drop_type_[1] ? old.num_ele_each_remove[drop_type_[1]]
+                                              : old.num_ele_each_remove[drop_type_[1]]-1)
+            / old.num_atm_remove / (old.num_atm_remove-1);
+        // Reverse move
+        prefactor *= prob_add_
+            * old.ele_list[drop_type_[0]].p_add / add_weight_tot
+            * old.ele_list[drop_type_[1]].p_add / add_weight_tot;
+    } else {
+        throw std::runtime_error("Previous move not recorded");
+    }
+
+    return prefactor;
+}
+
 
 // ----------------------------------------------------------------
 // mc implementation
 // ----------------------------------------------------------------
 
-void mc :: read_from_in(ifstream& in) {
-    string label_act_p = "begin_action_probability";
-    string tmp;
-    stringstream ss;
+static std::map<std::string, double> read_action_block(std::istream &in) {
+    const string label_act_p_start = "begin_action_probability";
+    const string label_act_p_end = "end_action_probability";
+    std::map<std::string, double> action_weight;
+
+    // Find the block
+    std::string line;
+    in.seekg(ios::beg);
+    in.clear();
+    while (getline(in, line)) {
+        if (line.find(label_act_p_start) != string::npos)
+            break;
+    }
+    if (in.eof())
+        throw std::runtime_error("Could not find action probabilities");
+
+    while (getline(in, line)) {
+        if (line.find(label_act_p_end) != std::string::npos)
+            break;
+
+        std::stringstream ss;
+        ss << line;
+        std::string label;
+        ss >> label;
+        // Lower case the string (note, crashes on non-ascii encodings)
+        std::transform(label.begin(), label.end(), label.begin(),
+                       [](unsigned char c){ return std::tolower(c); });
+        ss >> action_weight[label];
+    }
+
+    if (in.eof())
+        throw std::runtime_error("Did not find end of action_probability block");
+
+    return action_weight;
+}
+
+
+static std::vector<std::shared_ptr<MCMove>> init_actions_from_weights(
+    const std::map<std::string, double> &action_weight
+) {
+    if (action_weight.at("add") < EPS || action_weight.at("drop") < EPS) {
+        throw std::runtime_error("Add and Drop moves must both have positive weight");
+    }
+    auto ad_mov = std::make_shared<AddDropMove>(action_weight.at("add"), action_weight.at("drop"));
+    std::vector<std::shared_ptr<MCMove>> moves{ad_mov};
+
+    if (action_weight.find("swap") != action_weight.end()
+        && action_weight.at("swap") > EPS
+    ) {
+        auto sp_mov = std::make_shared<SwapMove>(action_weight.at("swap"));
+        moves.push_back(std::move(sp_mov));
+    }
+
+    if (action_weight.find("double") != action_weight.end()
+        && action_weight.at("double") > EPS
+    ) {
+        auto db_mov = std::make_shared<DoubleMove>(action_weight.at("double"));
+        moves.push_back(std::move(db_mov));
+    }
+
+    return moves;
+}
+
+
+void mc :: read_from_in(std::istream& in) {
+    const string label_act_p = "action_probability";
+    const string label_act_p_start = "begin_action_probability";
 
     read(in,"max_iter",'=',max_iter);
     read(in,"temperature",'=',temperature);
     read(in,"if_test",'=',if_test);
 
     // get action probability
-    double act_p[3];
+    std::map<std::string, double> action_weight;
+    string tmp;
     in.seekg(ios::beg);
     in.clear();
-    while(getline(in, tmp))
-        if(tmp.find(label_act_p) != string::npos)
+    while (getline(in, tmp)) {
+        if (tmp.find(label_act_p_start) != string::npos) {
+            action_weight = read_action_block(in);
             break;
-    for(int t1=0; t1<3; t1++)
-        in>>act_p[t1];
+        }
+        if (tmp.find(label_act_p) != string::npos) {
+            for (auto k : {"add", "drop", "swap"}) {
+                in >> action_weight[k];
+            }
+            break;
+        }
+    }
+    if (in.eof()) {
+        throw std::runtime_error("Could not find action probabilities");
+    }
     in.clear();
     in.seekg(ios::beg);
 
     // Initialize move objects
-    auto ad_mov = std::make_shared<AddDropMove>(act_p[0], act_p[1]);
-    auto sp_mov = std::make_shared<SwapMove>(act_p[2]);
-    moves_ = decltype(moves_){ad_mov, sp_mov};
+    moves_ = init_actions_from_weights(action_weight);
 
     // initialize other parameters
     act_type_ = -1;
