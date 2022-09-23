@@ -47,10 +47,18 @@ static bool choose_add(const Cell &cell_old, vec &pos_add, int &ele_type) {
 
     element ele_tmp = cell_old.ele_list[ele_type];
 
+    // Random distribution for new atom addition
+    std::uniform_real_distribution<double> da(cell_old.a_min, cell_old.a_max);
+    std::uniform_real_distribution<double> db(cell_old.b_min, cell_old.b_max);
+    // Breaks for "non standard" lattice orrientations
+    double cmin = cell_old.to_crystal({0, 0, cell_old.h_min})[2];
+    double cmax = cell_old.to_crystal({0, 0, cell_old.h_max})[2];
+    std::uniform_real_distribution<double> dc(cmin, cmax);
+
     // Choose position to add
     for (int t1 = 0; t1 < num_trial; t1++) {
         // Generate new position
-        pos_add.rand();  // add in [0, 1)^3; crystal coordinates
+        pos_add = {da(gcmc::rng), db(gcmc::rng), dc(gcmc::rng)};
 
         // Old atom-centered version
         // pos_add = atm_tmp.pos + pos_add.rand_norm()*(ele_tmp.r_min + (double)rand()/RAND_MAX*(ele_tmp.r_max - ele_tmp.r_min));
@@ -64,16 +72,19 @@ static bool choose_add(const Cell &cell_old, vec &pos_add, int &ele_type) {
 
         // Convert to cartesian coordinates and check Z coordinate
         pos_add = cell_old.from_crystal(pos_add);
-        if (pos_add.x[2] < cell_old.h_min || pos_add.x[2] > cell_old.h_max)
+        if (pos_add.x[2] < cell_old.h_min || pos_add.x[2] > cell_old.h_max) {
             continue;
+        }
 
         // Filter coordination rule
-        if (cell_old.if_vc_relax) {
+        if (!cell_old.if_vc_relax) {
             double r_tmp = cell_old.min_distance(pos_add);
             if (r_tmp > ele_tmp.r_min && r_tmp < ele_tmp.r_max) {
                 // Accept this position
                 return true;
             }
+        } else {
+            return true;
         }
     }
 
