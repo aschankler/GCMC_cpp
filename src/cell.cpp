@@ -12,43 +12,58 @@
 
 using namespace std;
 
-void Cell::read_from_in(ifstream& in) {
+
+CellControlParams cell_control_from_in(std::istream &in) {
+    double hmin, hmax;
+
+    read(in, "h_min", '=', hmin);
+    read(in, "h_max", '=', hmax);
+
+    CellControlParams params{hmin, hmax};
+
+    read_opt(in, "a_min", '=', params.a_min_);
+    read_opt(in, "a_max", '=', params.a_max_);
+    read_opt(in, "b_min", '=', params.b_min_);
+    read_opt(in, "b_max", '=', params.b_max_);
+
+    read_opt(in, "if_vc_relax", '=', params.if_vc_relax_);
+    read_opt(in, "if_change_v", '=', params.if_change_v_);
+
+    return params;
+}
+
+
+Cell cell_from_in(istream& in) {
     string label_ele = "begin_elements";
     string label_lat = "begin_lattice";
     string label_atm = "begin_atom_positions";
     string tmp;
     stringstream ss;
 
-    read(in,"num_ele",'=',num_ele);
-    read(in,"num_atm",'=',num_atm);
-    read(in,"h_min",'=',h_min);
-    read(in,"h_max",'=',h_max);
-    read_opt(in,"a_min",'=',a_min);
-    read_opt(in,"a_max",'=',a_max);
-    read_opt(in,"b_min",'=',b_min);
-    read_opt(in,"b_max",'=',b_max);
-    read(in,"if_vc_relax",'=',if_vc_relax);
-    read(in,"if_change_v",'=',if_change_v);
+    Cell cell{cell_control_from_in(in)};
+
+    read(in, "num_ele", '=', cell.num_ele);
+    read(in, "num_atm", '=', cell.num_atm);
 
     // generate element list
     while(getline(in,tmp))
         if(tmp.find(label_ele) != string::npos)
             break;
-    for (int t1 = 0; t1 < num_ele; t1 ++) {
+    for (int t1 = 0; t1 < cell.num_ele; t1 ++) {
         getline(in, tmp);
-        ele_list.push_back(element_from_input(tmp));
+        cell.ele_list.push_back(element_from_input(tmp));
     }
     in.clear();
     in.seekg(ios::beg);
 
     // generate atom list
-    atm_list.resize(num_atm);
+    cell.atm_list.resize(cell.num_atm);
     while(getline(in,tmp))
         if(tmp.find(label_atm) != string::npos)
             break;
-    for(int t1=0; t1<num_atm; t1++) {
+    for(int t1=0; t1<cell.num_atm; t1++) {
         getline(in,tmp);
-        atm_list[t1].line_from_in(tmp,ele_list);
+        cell.atm_list[t1].line_from_in(tmp, cell.ele_list);
     }
     in.clear();
     in.seekg(ios::beg);
@@ -57,13 +72,15 @@ void Cell::read_from_in(ifstream& in) {
     while(getline(in,tmp))
         if(tmp.find(label_lat) != string::npos)
             break;
-    in>>latt[0]>>latt[1]>>latt[2];
+    in>>cell.latt[0]>>cell.latt[1]>>cell.latt[2];
     in.clear();
     in.seekg(ios::beg);
 
-    count_move_atoms();
-    update_lat_inv();
-    update_volume();
+    cell.count_move_atoms();
+    cell.update_lat_inv();
+    cell.update_volume();
+
+    return cell;
 }
 
 void Cell::read_output(int calculator_type) {
@@ -174,7 +191,7 @@ void read_from_qe(Cell &cell_out) {
     }
 
     // cell parameters
-    if (cell_out.if_vc_relax) {
+    if (cell_out.control.if_vc_relax_) {
         while(tmp.find(label_cell) == string::npos)
             getline(in, tmp);
         for(int t1 = 0; t1 < 3; t1++) {
@@ -367,11 +384,11 @@ void Cell::count_move_atoms() {
 
 
 void Cell::update_volume() {
-    double h[3]= {0,0,h_max};
+    double h[3]= {0,0,control.h_max_};
     vec hh;
 
     hh = &h[0];
-    if (if_vc_relax)
+    if (control.if_vc_relax_)
         vol_ = (latt[0]^latt[1])*latt[2];
     else
         vol_ = (latt[0]^latt[1])*hh;
@@ -493,7 +510,7 @@ double Cell::min_distance(vec pos) const {
 void Cell :: print() const {
     cout<<"Number of elements: "<<num_ele<<endl;
     cout<<"Number of atoms: "<<num_atm<<endl;
-    cout<<"Threshold of height: "<<h_min<<", "<<h_max<<endl;
+    cout<<"Threshold of height: "<<control.h_min_ << ", " << control.h_max_ << endl;
     cout<<"Energy: "<<energy<<endl;
     cout<<"Volume: " << get_volume() << endl;
     cout<<"Total removable atoms: "<<num_atm_remove<<endl;

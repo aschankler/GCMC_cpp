@@ -9,43 +9,44 @@
 using namespace std;
 
 
-void Calculator::read_from_in(ifstream& in) {
-    int npool, ndiag;
+Calculator calculator_from_in(istream& in) {
+    std::string exe_name;
+    read(in, "exe", '=', exe_name);
 
-    read(in, "exe", '=', exe_name_);
+    // Read parallelism
+    int num_core;
+    std::string mpi_launcher;
+    read(in, "mpi_launcher", '=', mpi_launcher);
+    read(in, "num_core", '=', num_core);
+
+    std::string para_params;
+
+    if (not read_opt(in, "para_params", '=', para_params)) {
+        para_params = "";
+    }
+
+    // Invalid for vasp
+    int npool;
+    if (read_opt(in,"npool",'=',npool)) {
+        para_params.append(" -nk " + std::to_string(npool));
+    }
+    int ndiag;
+    if (read_opt(in,"ndiag",'=',ndiag)) {
+        para_params.append(" -ndiag " + std::to_string(ndiag));
+    }
+
+    return Calculator(exe_name, mpi_launcher, num_core, para_params);
+}
+
+
+Calculator::Calculator(std::string name, std::string launcher, int nc, std::string params)
+    : exe_name_(name), mpi_launcher_(launcher), num_core_(nc), para_params_(params) {
     if (exe_name_.find("pw") != string::npos) {
         calculator_type_ = 1;
     } else if(exe_name_.find("vasp") != string::npos) {
         calculator_type_ = 2;
     } else {
-        cout<<"Error: Currently only support QE and VASP!"<<endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // Read parallelism
-    read(in, "mpi_launcher", '=', mpi_launcher_);
-    read(in, "num_core", '=', num_core_);
-    if (not read_opt(in, "para_params", '=', para_params_)) {
-        para_params_ = "";
-    }
-
-    switch(calculator_type_) {
-    case 1: {
-        if (read_opt(in,"npool",'=',npool)) {
-            para_params_.append(" -nk " + std::to_string(npool));
-        }
-        if (read_opt(in,"ndiag",'=',ndiag)) {
-            para_params_.append(" -ndiag " + std::to_string(ndiag));
-        }
-        break;
-    }
-    case 2: {
-        break;
-    }
-    default: {
-        cout<<"Error: Invalid calculator type!"<<endl;
-        exit(EXIT_FAILURE);
-    }
+        throw std::runtime_error("Currently only support QE and VASP!");
     }
 }
 

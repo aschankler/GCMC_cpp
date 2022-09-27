@@ -1,18 +1,43 @@
 #ifndef __CELL__
 #define __CELL__
 
-#include <fstream>
+#include <istream>
 #include <vector>
+
 #include "element.h"
 #include "atom.h"
 #include "vec.h"
 
+
+class CellControlParams {
+  public:
+    CellControlParams(double hmin, double hmax)
+        : h_min_(hmin), h_max_(hmax) {}
+    // threshold of height
+    double h_min_, h_max_;
+    // threshold for addition in the xy plane
+    double a_min_ = 0.0;
+    double a_max_ = 1.0;
+    double b_min_ = 0.0;
+    double b_max_ = 1.0;
+    // if vc-relax
+    bool if_vc_relax_ = false;
+    // if change-v
+    bool if_change_v_ = false;
+};
+
+CellControlParams cell_control_from_in(std::istream&);
+
+
 class Cell {
   public:
+    Cell(CellControlParams c = CellControlParams(0, 1)) : control(c) {}
+    // Calculation parameters
+    CellControlParams control;
     // number of elements
-    int num_ele;
+    int num_ele = 0;
     // number of atoms
-    int num_atm;
+    int num_atm = 0;
     // lattice parameter
     vec latt[3];
     vec latt_inv[3];
@@ -21,29 +46,17 @@ class Cell {
     // list of atoms
     std::vector<Atom> atm_list;
 
-    // threshold of height
-    double h_min, h_max;
-    // threshold for addition in the xy plane
-    double a_min = 0.0;
-    double a_max = 1.0;
-    double b_min = 0.0;
-    double b_max = 1.0;
-
     // energy of cell
-    double energy;
+    double energy = 0;
     // number of movable atoms
     int num_atm_move, num_atm_remove;
     // number of atoms belonging each element
     std::vector<int> num_ele_each;
     // number of movable atoms belonging each element
     std::vector<int> num_ele_each_move, num_ele_each_remove;
-    // if vc-relax
-    int if_vc_relax;
-    // if change-v
-    int if_change_v;
+
 
     // io related function
-    void read_from_in(std::ifstream& in);
     void read_output(int calculator_type);
     friend void read_from_qe(Cell&);
     friend void read_from_vasp(Cell&);
@@ -79,5 +92,7 @@ class Cell {
     // volume of cell
     double vol_;
 };
+
+Cell cell_from_in(std::istream&);
 
 #endif  // __CELL__

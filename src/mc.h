@@ -76,41 +76,46 @@ class DoubleMove : public MCMove {
 };
 
 
-class mc {
+typedef std::vector<std::shared_ptr<MCMove>> MCMoveList;
+
+class MCMC {
   public:
+    MCMC(MCMoveList moves, double temp, int max_it, bool test = false)
+        : moves_(moves), temperature(temp), max_iter(max_it), if_test(test) {}
     // maximum number of iteration
     int max_iter;
     // simulation temperature
     double temperature;
     // if runing test
-    int if_test;
+    bool if_test;
 
     // global optimized formation energy
-    double opt_e;
+    double opt_e = 0.;
     // global optimized cell
     Cell opt_c;
-
-    void read_from_in(std::istream& in);
 
     std::shared_ptr<MCMove> choose_next_move(const Cell&);
     std::shared_ptr<MCMove> get_last_move() const;
 
-    void create_new_structure(const Cell c_old, Cell& c_new);
-    void save_opt_structure(const Cell c_new);
+    Cell create_new_structure(const Cell&);
+    void save_opt_structure(const Cell&);
     bool check_if_accept(Cell& c_old, Cell& c_new);
 
     void log_header(std::ostream&, const Cell&) const;
     void log_step(std::ostream&, const Cell&, int) const;
-    void print();
+    void print() const;
   private:
     // All available moves
-    std::vector<std::shared_ptr<MCMove>> moves_;
+    MCMoveList moves_;
     // which action is chosen
-    int act_type_;
+    int act_type_ = -1;
     // formation energy of old and new structure
-    double e_old_, e_trial_;
+    double e_old_ = 0.;
+    double e_trial_ = 0.;
     // status of if accepted or not
-    bool accept_;
+    bool accept_ = false;
 };
+
+MCMC mcmc_from_in(std::istream&);
 
 #endif  // __MC__

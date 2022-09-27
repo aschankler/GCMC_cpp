@@ -48,11 +48,11 @@ static bool choose_add(const Cell &cell_old, vec &pos_add, int &ele_type) {
     Element ele_tmp = cell_old.ele_list[ele_type];
 
     // Random distribution for new atom addition
-    std::uniform_real_distribution<double> da(cell_old.a_min, cell_old.a_max);
-    std::uniform_real_distribution<double> db(cell_old.b_min, cell_old.b_max);
+    std::uniform_real_distribution<double> da(cell_old.control.a_min_, cell_old.control.a_max_);
+    std::uniform_real_distribution<double> db(cell_old.control.b_min_, cell_old.control.b_max_);
     // Breaks for "non standard" lattice orrientations
-    double cmin = cell_old.to_crystal({0, 0, cell_old.h_min})[2];
-    double cmax = cell_old.to_crystal({0, 0, cell_old.h_max})[2];
+    double cmin = cell_old.to_crystal({0, 0, cell_old.control.h_min_})[2];
+    double cmax = cell_old.to_crystal({0, 0, cell_old.control.h_max_})[2];
     std::uniform_real_distribution<double> dc(cmin, cmax);
 
     // Choose position to add
@@ -64,20 +64,24 @@ static bool choose_add(const Cell &cell_old, vec &pos_add, int &ele_type) {
         // pos_add = atm_tmp.pos + pos_add.rand_norm()*(ele_tmp.r_min + (double)rand()/RAND_MAX*(ele_tmp.r_max - ele_tmp.r_min));
 
         // Filter xy-coordinate range
-        if (not (cell_old.a_min < pos_add[0] && pos_add[0] < cell_old.a_max
-                 && cell_old.b_min < pos_add[1] && pos_add[1] < cell_old.b_max)
+        if (not (cell_old.control.a_min_ < pos_add[0]
+                 && pos_add[0] < cell_old.control.a_max_
+                 && cell_old.control.b_min_ < pos_add[1]
+                 && pos_add[1] < cell_old.control.b_max_)
            ) {
             continue;
         }
 
         // Convert to cartesian coordinates and check Z coordinate
         pos_add = cell_old.from_crystal(pos_add);
-        if (pos_add.x[2] < cell_old.h_min || pos_add.x[2] > cell_old.h_max) {
+        if (pos_add.x[2] < cell_old.control.h_min_
+            || pos_add.x[2] > cell_old.control.h_max_
+        ) {
             continue;
         }
 
         // Filter coordination rule
-        if (!cell_old.if_vc_relax) {
+        if (!cell_old.control.if_vc_relax_) {
             double r_tmp = cell_old.min_distance(pos_add);
             if (r_tmp > ele_tmp.r_min_ && r_tmp < ele_tmp.r_max_) {
                 // Accept this position
@@ -190,7 +194,7 @@ static double phase_space_volume(const Cell &old, const Cell &trial) {
         phase_vol *= counting_factor(old.num_ele_each[i], trial.num_ele_each[i]);
     }
     // if allow V to change, multiply by (V_new/V_old)^N_tot(old)
-    if(trial.if_change_v)
+    if(trial.control.if_change_v_)
         phase_vol *= pow((trial.get_volume() / old.get_volume()), old.num_atm);
 
     return phase_vol;
@@ -289,7 +293,7 @@ double SwapMove::prefactor(const Cell &old, const Cell &trial) {
     // Only volume change affects sampling dist
     double prefactor = 1.;
 
-    if (trial.if_change_v)
+    if (trial.control.if_change_v_)
         prefactor *= pow((trial.get_volume() / old.get_volume()), old.num_atm);
 
     return prefactor;
@@ -403,7 +407,7 @@ double DoubleMove::prefactor(const Cell &old, const Cell &trial) {
 
 
 // ----------------------------------------------------------------
-// mc implementation
+// MCMC implementation
 // ----------------------------------------------------------------
 
 static std::map<std::string, double> read_action_block(std::istream &in) {
@@ -443,14 +447,14 @@ static std::map<std::string, double> read_action_block(std::istream &in) {
 }
 
 
-static std::vector<std::shared_ptr<MCMove>> init_actions_from_weights(
+static MCMoveList init_actions_from_weights(
     const std::map<std::string, double> &action_weight
 ) {
     if (action_weight.at("add") < EPS || action_weight.at("drop") < EPS) {
         throw std::runtime_error("Add and Drop moves must both have positive weight");
     }
     auto ad_mov = std::make_shared<AddDropMove>(action_weight.at("add"), action_weight.at("drop"));
-    std::vector<std::shared_ptr<MCMove>> moves{ad_mov};
+    MCMoveList moves{ad_mov};
 
     if (action_weight.find("swap") != action_weight.end()
         && action_weight.at("swap") > EPS
@@ -470,13 +474,16 @@ static std::vector<std::shared_ptr<MCMove>> init_actions_from_weights(
 }
 
 
-void mc :: read_from_in(std::istream& in) {
+MCMC mcmc_from_in(std::istream& in) {
     const string label_act_p = "action_probability";
     const string label_act_p_start = "begin_action_probability";
 
-    read(in,"max_iter",'=',max_iter);
-    read(in,"temperature",'=',temperature);
-    read(in,"if_test",'=',if_test);
+    int max_iter;
+    double temperature;
+    bool if_test = false;
+    read(in, "max_iter", '=', max_iter);
+    read(in, "temperature", '=', temperature);
+    read_opt(in, "if_test", '=', if_test);
 
     // get action probability
     std::map<std::string, double> action_weight;
@@ -502,15 +509,13 @@ void mc :: read_from_in(std::istream& in) {
     in.seekg(ios::beg);
 
     // Initialize move objects
-    moves_ = init_actions_from_weights(action_weight);
+    MCMoveList moves = init_actions_from_weights(action_weight);
 
-    // initialize other parameters
-    act_type_ = -1;
-    opt_e = 0;
+    return MCMC(moves, temperature, max_iter, if_test);
 }
 
 
-std::shared_ptr<MCMove> mc::choose_next_move(const Cell &cell) {
+std::shared_ptr<MCMove> MCMC::choose_next_move(const Cell &cell) {
     double action_weight[moves_.size()];
 
     //=======================================
@@ -557,20 +562,20 @@ std::shared_ptr<MCMove> mc::choose_next_move(const Cell &cell) {
 }
 
 
-std::shared_ptr<MCMove> mc::get_last_move() const {
+std::shared_ptr<MCMove> MCMC::get_last_move() const {
     return moves_[act_type_];
 }
 
 
-void mc::create_new_structure(const Cell c_old, Cell& c_new) {
-    // Choose move
+Cell MCMC::create_new_structure(const Cell &c_old) {
+    // Choose move type
     std::shared_ptr<MCMove> move = choose_next_move(c_old);
 
-    // start applying change
-    c_new = move->get_new_structure(c_old);
+    // applying the move
+    return move->get_new_structure(c_old);
 }
 
-void mc :: save_opt_structure(const Cell c_new) {
+void MCMC::save_opt_structure(const Cell &c_new) {
     opt_e = c_new.energy;
     for(int t1=0; t1<c_new.num_atm; t1++)
         opt_e -= c_new.atm_list[t1].ele->mu_;
@@ -588,7 +593,7 @@ static double formation_energy(const Cell &cell) {
 }
 
 
-bool mc :: check_if_accept(Cell& c_old, Cell& c_new) {
+bool MCMC::check_if_accept(Cell& c_old, Cell& c_new) {
     // calculate formation energy
     e_old_ = formation_energy(c_old);
     e_trial_ = formation_energy(c_new);
@@ -645,7 +650,7 @@ bool mc :: check_if_accept(Cell& c_old, Cell& c_new) {
 }
 
 
-void mc::log_header(std::ostream &log, const Cell &cell) const {
+void MCMC::log_header(std::ostream &log, const Cell &cell) const {
     log << setw(9) << "Iteration";
     for (int t1 = 0; t1 < cell.num_ele; t1++)
         log << setw(4) << cell.ele_list[t1].sym_;
@@ -658,7 +663,7 @@ void mc::log_header(std::ostream &log, const Cell &cell) const {
 }
 
 
-void mc::log_step(std::ostream &log, const Cell &cell, int iter) const {
+void MCMC::log_step(std::ostream &log, const Cell &cell, int iter) const {
     log << setw(9) << iter;
     for(int t1 = 0; t1 < cell.num_ele; t1++)
         log << setw(4) << cell.num_ele_each[t1];
@@ -676,7 +681,7 @@ void mc::log_step(std::ostream &log, const Cell &cell, int iter) const {
 }
 
 
-void mc :: print() {
+void MCMC::print() const {
     cout<<"Max iteration: "<<max_iter<<endl;
     cout<<"Simulation temperature: "<<temperature<<endl;
     cout<<"If running test: "<<if_test<<endl;
