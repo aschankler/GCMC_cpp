@@ -107,9 +107,9 @@ void Calculator::write_qe_in(ifstream& in, const Cell& c_new) const {
 
     out<<endl<<position<<endl;
     for(int t1=0; t1<c_new.num_atm; t1++) {
-        out<<setw(2)<<c_new.atm_list[t1].ele->sym_<<"    ";
-        out<<c_new.atm_list[t1].pos;
-        if(c_new.atm_list[t1].if_move == 0)
+        out<<setw(2)<<c_new.atom_type(t1).sym_<<"    ";
+        out<<c_new.atm_list[t1].pos_;
+        if(c_new.atm_list[t1].if_move_ == 0)
             out<<" 0 0 0"<<endl;
         else
             out<<endl;
@@ -187,12 +187,12 @@ void Calculator::write_vasp_in(std::ifstream &in, const Cell &c_new) const {
     vec frac_coord;
     for(auto m1:c_new.ele_list) {
         for(auto m2:c_new.atm_list) {
-            if(m1.sym_ == m2.ele->sym_) {
-                frac_coord.x[0] = m2.pos*c_new.latt_inv[0];
-                frac_coord.x[1] = m2.pos*c_new.latt_inv[1];
-                frac_coord.x[2] = m2.pos*c_new.latt_inv[2];
+            if(m1.sym_ == c_new.ele_list[m2.type_].sym_) {
+                frac_coord.x[0] = m2.pos_*c_new.latt_inv[0];
+                frac_coord.x[1] = m2.pos_*c_new.latt_inv[1];
+                frac_coord.x[2] = m2.pos_*c_new.latt_inv[2];
                 poscar<<frac_coord;
-                if(m2.if_move)
+                if(m2.if_move_)
                     poscar<<"  T  T  T"<<endl;
                 else
                     poscar<<"  F  F  F"<<endl;

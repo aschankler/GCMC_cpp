@@ -57,13 +57,12 @@ Cell cell_from_in(istream& in) {
     in.seekg(ios::beg);
 
     // generate atom list
-    cell.atm_list.resize(cell.num_atm);
     while(getline(in,tmp))
         if(tmp.find(label_atm) != string::npos)
             break;
     for(int t1=0; t1<cell.num_atm; t1++) {
         getline(in,tmp);
-        cell.atm_list[t1].line_from_in(tmp, cell.ele_list);
+        cell.atm_list.push_back(atom_from_input(tmp, cell.ele_list));
     }
     in.clear();
     in.seekg(ios::beg);
@@ -76,9 +75,7 @@ Cell cell_from_in(istream& in) {
     in.clear();
     in.seekg(ios::beg);
 
-    cell.count_move_atoms();
-    cell.update_lat_inv();
-    cell.update_volume();
+    cell.update();
 
     return cell;
 }
@@ -107,7 +104,7 @@ void Cell::read_output(int calculator_type) {
 
 void Cell::zero_force() {
     for(int t1 = 0; t1 < num_atm; t1++)
-        atm_list[t1].force = atm_list[t1].force * 0;
+        atm_list[t1].force_ = atm_list[t1].force_ * 0;
 }
 
 
@@ -185,7 +182,7 @@ void read_from_qe(Cell &cell_out) {
         getline(in, tmp);
         for(int t1 = 0; t1 < cell_out.num_atm; t1++) {
             getline(in, tmp, '=');
-            in >> cell_out.atm_list[t1].force;
+            in >> cell_out.atm_list[t1].force_;
             getline(in, tmp);
         }
     }
@@ -210,7 +207,7 @@ void read_from_qe(Cell &cell_out) {
         exit(EXIT_FAILURE);
     } else {
         for(int t1 = 0; t1 < cell_out.num_atm; t1++) {
-            in >> tmp >> cell_out.atm_list[t1].pos;
+            in >> tmp >> cell_out.atm_list[t1].pos_;
             getline(in, tmp);
         }
     }
@@ -278,8 +275,7 @@ void read_from_vasp(Cell &cell_out) {
     for(int t1 = 0; t1 < cell_out.num_ele; t1++) {
         coord_in >> num_tmp;
         if(num_tmp != cell_out.num_ele_each[t1]) {
-            cout<<"Error: Wrong number of atoms in CONTCAR!"<<endl;
-            exit(EXIT_FAILURE);
+            throw std::runtime_error("Wrong number of atoms in CONTCAR!");
         }
     }
 
@@ -295,13 +291,13 @@ void read_from_vasp(Cell &cell_out) {
         return;
     } else {
         vec frac_coord, atomic_coord;
-        for(auto m1:cell_out.ele_list) {
+        for (int i_ele = 0; i_ele < cell_out.num_ele; i_ele++) {
             for(auto& m2:cell_out.atm_list) {
-                if(m1.sym_ == m2.ele->sym_) {
+                if (i_ele == m2.type_) {
                     coord_in >> frac_coord;
                     getline(coord_in, tmp);
                     atomic_coord = cell_out.latt[0]*frac_coord.x[0] + cell_out.latt[1]*frac_coord.x[1] + cell_out.latt[2]*frac_coord.x[2];
-                    m2.pos = atomic_coord;
+                    m2.pos_ = atomic_coord;
                 }
             }
         }
@@ -323,8 +319,8 @@ void Cell::write_axsf(ofstream& out,int iter) const {
     out<<"PRIMCOORD "<<iter<<endl;
     out<<num_atm<<" 1"<<endl;
     for(int t1=0; t1<num_atm; t1++) {
-        out<<setw(2)<<atm_list[t1].ele->sym_;
-        out<<atm_list[t1].pos<<atm_list[t1].force<<endl;
+        out << setw(2) << atom_type(t1).sym_;
+        out<<atm_list[t1].pos_<<atm_list[t1].force_<<endl;
     }
 }
 
@@ -336,10 +332,18 @@ void Cell::write_xsf(ofstream& out,int iter) const {
     out<<"PRIMCOORD "<<iter<<endl;
     out<<num_atm<<" 1"<<endl;
     for(int t1=0; t1<num_atm; t1++) {
-        out<<setw(2)<<atm_list[t1].ele->sym_;
-        out<<atm_list[t1].pos<<atm_list[t1].force<<endl;
+        out << setw(2) << atom_type(t1).sym_;
+        out<<atm_list[t1].pos_<<atm_list[t1].force_<<endl;
     }
 }
+
+
+void Cell::update() {
+    update_volume();
+    update_lat_inv();
+    count_move_atoms();
+}
+
 
 void Cell::count_move_atoms() {
     num_ele_each.resize(num_ele);
@@ -354,8 +358,8 @@ void Cell::count_move_atoms() {
     }
     // start counting
     for(int t1=0; t1<num_atm; t1++) {
-        num_ele_each[atm_list[t1].type]++;
-        switch(atm_list[t1].if_move) {
+        num_ele_each[atm_list[t1].type_]++;
+        switch(atm_list[t1].if_move_) {
         // not movable
         case 0: {
             break;
@@ -363,19 +367,19 @@ void Cell::count_move_atoms() {
         // movable not removable
         case 1: {
             num_atm_move++;
-            num_ele_each_move[atm_list[t1].type]++;
+            num_ele_each_move[atm_list[t1].type_]++;
             break;
         }
         // all free
         case 2: {
             num_atm_move++;
             num_atm_remove++;
-            num_ele_each_move[atm_list[t1].type]++;
-            num_ele_each_remove[atm_list[t1].type]++;
+            num_ele_each_move[atm_list[t1].type_]++;
+            num_ele_each_remove[atm_list[t1].type_]++;
             break;
         }
         default: {
-            cout<<"Error: Atom "<<t1+1<<' '<<atm_list[t1].ele->sym_<<" does not have a vaild (re)movable flag"<<endl;
+            cout<<"Error: Atom "<<t1+1<<' '<<atom_type(t1).sym_<<" does not have a vaild (re)movable flag"<<endl;
             exit(EXIT_FAILURE);
         }
         }
@@ -440,19 +444,18 @@ const vec Cell::from_crystal(const vec& pos) const {
 
 void Cell::ad_atom(vec pos, int ele_type) {
     Atom tmp;
-    tmp.type = ele_type;
-    tmp.ele = &ele_list[ele_type];
-    tmp.pos = pos;
-    tmp.force = pos*0;
-    tmp.if_move = 2;
+    tmp.type_ = ele_type;
+    tmp.pos_ = pos;
+    tmp.force_ = pos*0;
+    tmp.if_move_ = 2;
     atm_list.push_back(tmp);
     num_atm++;
     count_move_atoms();
 }
 
 void Cell::rm_atom(int ind_atm) {
-    if (atm_list[ind_atm].if_move <= 1) {
-        cout<<"Error: Can not remove atom "<<ind_atm+1<<' '<<atm_list[ind_atm].ele->sym_<<", not removable"<<endl;
+    if (atm_list[ind_atm].if_move_ <= 1) {
+        cout<<"Error: Can not remove atom "<<ind_atm+1<<' '<<atom_type(ind_atm).sym_<<", not removable"<<endl;
         exit(EXIT_FAILURE);
     }
     atm_list.erase(atm_list.begin() + ind_atm);
@@ -462,13 +465,13 @@ void Cell::rm_atom(int ind_atm) {
 
 void Cell::sp_atom(int s1, int s2) {
     vec tmp;
-    tmp = atm_list[s1].pos;
-    atm_list[s1].pos = atm_list[s2].pos;
-    atm_list[s2].pos = tmp;
+    tmp = atm_list[s1].pos_;
+    atm_list[s1].pos_ = atm_list[s2].pos_;
+    atm_list[s2].pos_ = tmp;
 
-    tmp = atm_list[s1].force;
-    atm_list[s1].force = atm_list[s2].force;
-    atm_list[s2].force = tmp;
+    tmp = atm_list[s1].force_;
+    atm_list[s1].force_ = atm_list[s2].force_;
+    atm_list[s2].force_ = tmp;
 }
 
 void Cell::update_tb(double T) {
@@ -487,7 +490,7 @@ double Cell::min_distance(vec pos, int& min_idx) const {
             for (int t3 = -1; t3 < 2; t3++) {
                 for (int at_idx = 0; at_idx < num_atm; at_idx++) {
                     r_tmp = (
-                        pos + latt[0]*t1 + latt[1]*t2 + latt[2]*t3 - atm_list[at_idx].pos
+                        pos + latt[0]*t1 + latt[1]*t2 + latt[2]*t3 - atm_list[at_idx].pos_
                     ).norm();
 
                     if (r_min > r_tmp) {

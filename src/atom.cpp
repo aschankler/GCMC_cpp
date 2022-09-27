@@ -8,31 +8,31 @@
 
 using namespace std;
 
-void Atom::line_from_in(string tmp, vector<Element>& ele_list)
-{
+Atom atom_from_input(const std::string &tmp, vector<Element>& ele_list) {
 	string ele_symbol;
 	stringstream ss;
 
+	Atom at;
 	ss<<(tmp);
-	ss>>ele_symbol>>pos>>if_move;
-	ele = nullptr;
+	ss>>ele_symbol>>at.pos_>>at.if_move_;
+	at.type_ = -1;
 	for (size_t t1=0 ; t1 < ele_list.size() ; t1++)
 	{
 		if (ele_symbol == ele_list[t1].sym_)
 		{
-			type = t1;
-			ele = &ele_list[t1];
+			at.type_ = t1;
 			break;
 		}
 	}
-	if (ele == nullptr)
+	if (at.type_ < 0)
 	{
 		cout<<"Error: Element "<<ele_symbol<<" not defined!"<<endl;
 		exit(EXIT_FAILURE);
 	}
+	return at;
 }
 
 void Atom::print() const
 {
-	cout<<ele->sym_<<'\t'<<pos<<'\t'<<if_move<<endl;
+	cout<<type_<<'\t'<<pos_<<'\t'<<if_move_<<endl;
 }

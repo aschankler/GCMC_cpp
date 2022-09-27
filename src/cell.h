@@ -32,6 +32,7 @@ CellControlParams cell_control_from_in(std::istream&);
 class Cell {
   public:
     Cell(CellControlParams c = CellControlParams(0, 1)) : control(c) {}
+
     // Calculation parameters
     CellControlParams control;
     // number of elements
@@ -61,20 +62,20 @@ class Cell {
     friend void read_from_qe(Cell&);
     friend void read_from_vasp(Cell&);
 
+    void update();
+    void zero_force();
+    void update_temperature(double);
+
+    // self-opearted functions
+    double get_volume() const { return vol_; }
+    const Element &atom_type(int i) const { return ele_list[atm_list[i].type_]; };
+    const vec to_crystal(const vec& pos) const;
+    const vec from_crystal(const vec& pos) const;
+
     void write_axsf(std::ofstream& out) const;
     void write_axsf(std::ofstream& out,int iter) const;
     void write_xsf(std::ofstream& out) const;
     void write_xsf(std::ofstream& out,int iter) const;
-
-    // self-opearted functions
-    void count_move_atoms();
-    double get_volume() const { return vol_; }
-    void update_volume();
-    void update_lat_inv();
-    void zero_force();
-    void update_temperature(double);
-    const vec to_crystal(const vec& pos) const;
-    const vec from_crystal(const vec& pos) const;
 
     // adjust atom list
     void ad_atom(vec pos, int ele_type);
@@ -89,6 +90,10 @@ class Cell {
     void print() const;
 
   private:
+    void count_move_atoms();
+    void update_volume();
+    void update_lat_inv();
+
     // volume of cell
     double vol_;
 };

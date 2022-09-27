@@ -113,7 +113,7 @@ static int choose_drop(const Cell &cell_old, int &rm_idx) {
     // Select the ith removable atom
     int atm_id_tmp = dist(gcmc::rng);
     for (int t1 = 0; t1 < cell_old.num_atm; t1++) {
-        if (cell_old.atm_list[t1].if_move == 2) {
+        if (cell_old.atm_list[t1].if_move_ == 2) {
             // Atom is removable
             if (atm_id_tmp == 0) {
                 rm_idx = t1;
@@ -153,9 +153,9 @@ Cell AddDropMove::get_new_structure(const Cell &cell) {
         choose_drop(cell_new, rm_idx);
         cell_new.rm_atom(rm_idx);
         // Cache move
-        drop_type_ = cell.atm_list[rm_idx].type;
+        drop_type_ = cell.atm_list[rm_idx].type_;
         cout << "Atom removed, -" << rm_idx+1;
-        cout << " " << cell.atm_list[rm_idx].ele->sym_ << endl;
+        cout << " " << cell.atom_type(rm_idx).sym_ << endl;
         return cell_new;
     }
 
@@ -247,7 +247,7 @@ Cell SwapMove::get_new_structure(const Cell &cell) {
     int idx1 = -1;
     int atm_id_tmp = dist(gcmc::rng);
     for (int t1 = 0; t1 < cell.num_atm; t1++) {
-        if (cell.atm_list[t1].if_move >= 1) {
+        if (cell.atm_list[t1].if_move_ >= 1) {
             // Atom is movable
             if (atm_id_tmp == 0) {
                 idx1 = t1;
@@ -262,11 +262,11 @@ Cell SwapMove::get_new_structure(const Cell &cell) {
 
     // find the second atom to switch
     int idx2 = -1;
-    int num_move_distinct = cell.num_atm_move - cell.num_ele_each_move[cell.atm_list[idx1].type];
+    int num_move_distinct = cell.num_atm_move - cell.num_ele_each_move[cell.atm_list[idx1].type_];
     atm_id_tmp = dist(gcmc::rng, decltype(dist)::param_type(0, num_move_distinct-1));
     for (int t1 = 0; t1 < cell.num_atm; t1++) {
-        if (cell.atm_list[t1].if_move >= 1
-            && cell.atm_list[t1].type != cell.atm_list[idx1].type
+        if (cell.atm_list[t1].if_move_ >= 1
+            && cell.atm_list[t1].type_ != cell.atm_list[idx1].type_
         ) {
             // Atom is movable
             if (atm_id_tmp == 0) {
@@ -281,8 +281,8 @@ Cell SwapMove::get_new_structure(const Cell &cell) {
         throw std::runtime_error("Could not find swap move");
 
     // Create new cell
-    cout << "Atoms swapped, " << idx1+1 << " " << cell.atm_list[idx1].ele->sym_;
-    cout << " <--> " << idx2+1 << " " << cell.atm_list[idx2].ele->sym_ << endl;
+    cout << "Atoms swapped, " << idx1+1 << " " << cell.atom_type(idx1).sym_;
+    cout << " <--> " << idx2+1 << " " << cell.atom_type(idx2).sym_ << endl;
     Cell cell_new = cell;
     cell_new.sp_atom(idx1, idx2);
     return cell_new;
@@ -351,14 +351,14 @@ Cell DoubleMove::get_new_structure(const Cell &cell) {
     if (drop_avail_) {
         int rm_idx1, rm_idx2;
         choose_drop(cell_new, rm_idx1);
-        drop_type_[0] = cell_new.atm_list[rm_idx1].type;
+        drop_type_[0] = cell_new.atm_list[rm_idx1].type_;
         cout << "Atom removed, -" << rm_idx1+1;
-        cout << " " << cell_new.atm_list[rm_idx1].ele->sym_ << endl;
+        cout << " " << cell_new.atom_type(rm_idx1).sym_ << endl;
         cell_new.rm_atom(rm_idx1);
         choose_drop(cell_new, rm_idx2);
-        drop_type_[1] = cell_new.atm_list[rm_idx2].type;
+        drop_type_[1] = cell_new.atm_list[rm_idx2].type_;
         cout << "Atom removed, -" << (rm_idx2 < rm_idx1 ? rm_idx2+1 : rm_idx2+2);
-        cout << " " << cell_new.atm_list[rm_idx2].ele->sym_ << endl;
+        cout << " " << cell_new.atom_type(rm_idx2).sym_ << endl;
         cell_new.rm_atom(rm_idx2);
         return cell_new;
     }
@@ -578,7 +578,7 @@ Cell MCMC::create_new_structure(const Cell &c_old) {
 void MCMC::save_opt_structure(const Cell &c_new) {
     opt_e = c_new.energy;
     for(int t1=0; t1<c_new.num_atm; t1++)
-        opt_e -= c_new.atm_list[t1].ele->mu_;
+        opt_e -= c_new.atom_type(t1).mu_;
     opt_c = c_new;
     cout<<"Initialized the minimum seeker to the starting structure"<<endl;
 }
@@ -587,7 +587,7 @@ void MCMC::save_opt_structure(const Cell &c_new) {
 static double formation_energy(const Cell &cell) {
     double energy = cell.energy;
     for (int i = 0; i < cell.num_atm; i++) {
-        energy -= cell.atm_list[i].ele->mu_;
+        energy -= cell.atom_type(i).mu_;
     }
     return energy;
 }
