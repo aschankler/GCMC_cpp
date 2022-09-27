@@ -31,21 +31,21 @@ static bool choose_add(const Cell &cell_old, vec &pos_add, int &ele_type) {
     // Choose species to add
     double add_weight_sum = 0;
     for (int t1 = 0; t1 < cell_old.num_ele; t1++)
-        add_weight_sum += cell_old.ele_list[t1].p_add;
+        add_weight_sum += cell_old.ele_list[t1].p_add_;
 
     // Choose random number from [0, add_weight_sum)
     ele_type = cell_old.num_ele;
     std::uniform_real_distribution<double> ele_dist(0., add_weight_sum);
     add_weight_sum = ele_dist(gcmc::rng);
     for (int t1 = 0; t1 < cell_old.num_ele; t1++) {
-        add_weight_sum -= cell_old.ele_list[t1].p_add;
+        add_weight_sum -= cell_old.ele_list[t1].p_add_;
         if(add_weight_sum <= 0) {
             ele_type = t1;
             break;
         }
     }
 
-    element ele_tmp = cell_old.ele_list[ele_type];
+    Element ele_tmp = cell_old.ele_list[ele_type];
 
     // Random distribution for new atom addition
     std::uniform_real_distribution<double> da(cell_old.a_min, cell_old.a_max);
@@ -79,7 +79,7 @@ static bool choose_add(const Cell &cell_old, vec &pos_add, int &ele_type) {
         // Filter coordination rule
         if (!cell_old.if_vc_relax) {
             double r_tmp = cell_old.min_distance(pos_add);
-            if (r_tmp > ele_tmp.r_min && r_tmp < ele_tmp.r_max) {
+            if (r_tmp > ele_tmp.r_min_ && r_tmp < ele_tmp.r_max_) {
                 // Accept this position
                 return true;
             }
@@ -139,7 +139,7 @@ Cell AddDropMove::get_new_structure(const Cell &cell) {
         // Use cached addition
         cell_new.ad_atom(add_pos_, add_type_);
         cout << "Atom added, +" << cell_new.num_atm;
-        cout << " " << cell_new.ele_list[add_type_].sym;
+        cout << " " << cell_new.ele_list[add_type_].sym_;
         cout << ", position is " << add_pos_ << endl;
         return cell_new;
     }
@@ -151,7 +151,7 @@ Cell AddDropMove::get_new_structure(const Cell &cell) {
         // Cache move
         drop_type_ = cell.atm_list[rm_idx].type;
         cout << "Atom removed, -" << rm_idx+1;
-        cout << " " << cell.atm_list[rm_idx].ele->sym << endl;
+        cout << " " << cell.atm_list[rm_idx].ele->sym_ << endl;
         return cell_new;
     }
 
@@ -185,7 +185,7 @@ static double phase_space_volume(const Cell &old, const Cell &trial) {
         auto e1 = old.ele_list[i];
         int dn = trial.num_ele_each[i] - old.num_ele_each[i];
         // Factor of (V/Lambda^3)^dN
-        phase_vol *= pow(trial.get_volume() / pow(e1.tb, 3), dn);
+        phase_vol *= pow(trial.get_volume() / pow(e1.tb_, 3), dn);
         // Counting factor for indistinguishable atoms
         phase_vol *= counting_factor(old.num_ele_each[i], trial.num_ele_each[i]);
     }
@@ -202,19 +202,19 @@ double AddDropMove::prefactor(const Cell &old, const Cell &trial) {
 
     double add_weight_tot = 0.;
     for (auto elem : trial.ele_list)
-        add_weight_tot += elem.p_add;
+        add_weight_tot += elem.p_add_;
 
     // Prob of choosing reverse move over forward move
     if (add_avail_) {
         // Forward move
-        prefactor /= prob_add_ * trial.ele_list[add_type_].p_add / add_weight_tot;
+        prefactor /= prob_add_ * trial.ele_list[add_type_].p_add_ / add_weight_tot;
         // Reverse move
         prefactor *= prob_drop_ * trial.num_ele_each_remove[add_type_] / trial.num_atm_remove;
     } else if (drop_avail_) {
         // Forward move
         prefactor /= prob_drop_ * old.num_ele_each_remove[drop_type_] / old.num_atm_remove;
         // Reverse move
-        prefactor *= prob_add_ * old.ele_list[drop_type_].p_add / add_weight_tot;
+        prefactor *= prob_add_ * old.ele_list[drop_type_].p_add_ / add_weight_tot;
     } else {
         throw std::runtime_error("Previous move not recorded");
     }
@@ -277,8 +277,8 @@ Cell SwapMove::get_new_structure(const Cell &cell) {
         throw std::runtime_error("Could not find swap move");
 
     // Create new cell
-    cout << "Atoms swapped, " << idx1+1 << " " << cell.atm_list[idx1].ele->sym;
-    cout << " <--> " << idx2+1 << " " << cell.atm_list[idx2].ele->sym << endl;
+    cout << "Atoms swapped, " << idx1+1 << " " << cell.atm_list[idx1].ele->sym_;
+    cout << " <--> " << idx2+1 << " " << cell.atm_list[idx2].ele->sym_ << endl;
     Cell cell_new = cell;
     cell_new.sp_atom(idx1, idx2);
     return cell_new;
@@ -335,11 +335,11 @@ Cell DoubleMove::get_new_structure(const Cell &cell) {
         // Use cached addition
         cell_new.ad_atom(add_pos_[0], add_type_[0]);
         cout << "Atom added, +" << cell_new.num_atm;
-        cout << " " << cell_new.ele_list[add_type_[0]].sym;
+        cout << " " << cell_new.ele_list[add_type_[0]].sym_;
         cout << ", position is " << add_pos_[0] << endl;
         cell_new.ad_atom(add_pos_[1], add_type_[1]);
         cout << "Atom added, +" << cell_new.num_atm;
-        cout << " " << cell_new.ele_list[add_type_[1]].sym;
+        cout << " " << cell_new.ele_list[add_type_[1]].sym_;
         cout << ", position is " << add_pos_[1] << endl;
         return cell_new;
     }
@@ -349,12 +349,12 @@ Cell DoubleMove::get_new_structure(const Cell &cell) {
         choose_drop(cell_new, rm_idx1);
         drop_type_[0] = cell_new.atm_list[rm_idx1].type;
         cout << "Atom removed, -" << rm_idx1+1;
-        cout << " " << cell_new.atm_list[rm_idx1].ele->sym << endl;
+        cout << " " << cell_new.atm_list[rm_idx1].ele->sym_ << endl;
         cell_new.rm_atom(rm_idx1);
         choose_drop(cell_new, rm_idx2);
         drop_type_[1] = cell_new.atm_list[rm_idx2].type;
         cout << "Atom removed, -" << (rm_idx2 < rm_idx1 ? rm_idx2+1 : rm_idx2+2);
-        cout << " " << cell_new.atm_list[rm_idx2].ele->sym << endl;
+        cout << " " << cell_new.atm_list[rm_idx2].ele->sym_ << endl;
         cell_new.rm_atom(rm_idx2);
         return cell_new;
     }
@@ -368,15 +368,15 @@ double DoubleMove::prefactor(const Cell &old, const Cell &trial) {
 
     double add_weight_tot = 0.;
     for (auto elem : trial.ele_list)
-        add_weight_tot += elem.p_add;
+        add_weight_tot += elem.p_add_;
 
     // Prob of choosing reverse move over forward move
     if (add_avail_) {
         // Combinatorial factor of two is not needed as it applies to both forward and reverse move
         // Forward move
         prefactor /= prob_add_
-            * trial.ele_list[add_type_[0]].p_add / add_weight_tot
-            * trial.ele_list[add_type_[1]].p_add / add_weight_tot;
+            * trial.ele_list[add_type_[0]].p_add_ / add_weight_tot
+            * trial.ele_list[add_type_[1]].p_add_ / add_weight_tot;
         // Reverse move
         prefactor *= prob_drop_
             * trial.num_ele_each_remove[add_type_[0]]
@@ -392,8 +392,8 @@ double DoubleMove::prefactor(const Cell &old, const Cell &trial) {
             / old.num_atm_remove / (old.num_atm_remove-1);
         // Reverse move
         prefactor *= prob_add_
-            * old.ele_list[drop_type_[0]].p_add / add_weight_tot
-            * old.ele_list[drop_type_[1]].p_add / add_weight_tot;
+            * old.ele_list[drop_type_[0]].p_add_ / add_weight_tot
+            * old.ele_list[drop_type_[1]].p_add_ / add_weight_tot;
     } else {
         throw std::runtime_error("Previous move not recorded");
     }
@@ -573,7 +573,7 @@ void mc::create_new_structure(const Cell c_old, Cell& c_new) {
 void mc :: save_opt_structure(const Cell c_new) {
     opt_e = c_new.energy;
     for(int t1=0; t1<c_new.num_atm; t1++)
-        opt_e -= c_new.atm_list[t1].ele->mu;
+        opt_e -= c_new.atm_list[t1].ele->mu_;
     opt_c = c_new;
     cout<<"Initialized the minimum seeker to the starting structure"<<endl;
 }
@@ -582,7 +582,7 @@ void mc :: save_opt_structure(const Cell c_new) {
 static double formation_energy(const Cell &cell) {
     double energy = cell.energy;
     for (int i = 0; i < cell.num_atm; i++) {
-        energy -= cell.atm_list[i].ele->mu;
+        energy -= cell.atm_list[i].ele->mu_;
     }
     return energy;
 }
@@ -648,7 +648,7 @@ bool mc :: check_if_accept(Cell& c_old, Cell& c_new) {
 void mc::log_header(std::ostream &log, const Cell &cell) const {
     log << setw(9) << "Iteration";
     for (int t1 = 0; t1 < cell.num_ele; t1++)
-        log << setw(4) << cell.ele_list[t1].sym;
+        log << setw(4) << cell.ele_list[t1].sym_;
     log << setw(20) << "DFT_E";
     log << setw(20) << "Trial_E_f";
     log << setw(20) << "Previous_E_f";

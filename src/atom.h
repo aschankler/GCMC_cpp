@@ -2,18 +2,17 @@
 #define __ATOM__
 
 #include <string>
-#include <sstream>
 #include <vector>
+
 #include "element.h"
 #include "vec.h"
 
-class atom
-{
+class Atom {
 public:
 	// index of type to atom
 	int type;
 	// pointer to the element
-	element *ele;
+	Element *ele;
 	// position
 	vec pos;
 	// force
@@ -21,8 +20,7 @@ public:
 	// define whether movable, 0, not movable; 1, movable but not removable; 2, all free
 	int if_move;
 
-	void line_from_in(std::string tmp, std::vector<element>& ele_list);
-	void line_from_qe(std::stringstream& ss, std::vector<element>& ele_list);
+	void line_from_in(std::string tmp, std::vector<Element>& ele_list);
 
 	void print() const;
 };

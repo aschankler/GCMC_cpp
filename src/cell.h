@@ -17,9 +17,9 @@ class Cell {
     vec latt[3];
     vec latt_inv[3];
     // list of element
-    std::vector<element> ele_list;
+    std::vector<Element> ele_list;
     // list of atoms
-    std::vector<atom> atm_list;
+    std::vector<Atom> atm_list;
 
     // threshold of height
     double h_min, h_max;

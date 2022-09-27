@@ -31,13 +31,12 @@ void Cell::read_from_in(ifstream& in) {
     read(in,"if_change_v",'=',if_change_v);
 
     // generate element list
-    ele_list.resize(num_ele);
     while(getline(in,tmp))
         if(tmp.find(label_ele) != string::npos)
             break;
-    for(int t1=0; t1<num_ele; t1++) {
-        getline(in,tmp);
-        ele_list[t1].get_param(tmp);
+    for (int t1 = 0; t1 < num_ele; t1 ++) {
+        getline(in, tmp);
+        ele_list.push_back(element_from_input(tmp));
     }
     in.clear();
     in.seekg(ios::beg);
@@ -281,7 +280,7 @@ void read_from_vasp(Cell &cell_out) {
         vec frac_coord, atomic_coord;
         for(auto m1:cell_out.ele_list) {
             for(auto& m2:cell_out.atm_list) {
-                if(m1.sym == m2.ele->sym) {
+                if(m1.sym_ == m2.ele->sym_) {
                     coord_in >> frac_coord;
                     getline(coord_in, tmp);
                     atomic_coord = cell_out.latt[0]*frac_coord.x[0] + cell_out.latt[1]*frac_coord.x[1] + cell_out.latt[2]*frac_coord.x[2];
@@ -307,7 +306,7 @@ void Cell::write_axsf(ofstream& out,int iter) const {
     out<<"PRIMCOORD "<<iter<<endl;
     out<<num_atm<<" 1"<<endl;
     for(int t1=0; t1<num_atm; t1++) {
-        out<<setw(2)<<atm_list[t1].ele->sym;
+        out<<setw(2)<<atm_list[t1].ele->sym_;
         out<<atm_list[t1].pos<<atm_list[t1].force<<endl;
     }
 }
@@ -320,7 +319,7 @@ void Cell::write_xsf(ofstream& out,int iter) const {
     out<<"PRIMCOORD "<<iter<<endl;
     out<<num_atm<<" 1"<<endl;
     for(int t1=0; t1<num_atm; t1++) {
-        out<<setw(2)<<atm_list[t1].ele->sym;
+        out<<setw(2)<<atm_list[t1].ele->sym_;
         out<<atm_list[t1].pos<<atm_list[t1].force<<endl;
     }
 }
@@ -359,7 +358,7 @@ void Cell::count_move_atoms() {
             break;
         }
         default: {
-            cout<<"Error: Atom "<<t1+1<<' '<<atm_list[t1].ele->sym<<" does not have a vaild (re)movable flag"<<endl;
+            cout<<"Error: Atom "<<t1+1<<' '<<atm_list[t1].ele->sym_<<" does not have a vaild (re)movable flag"<<endl;
             exit(EXIT_FAILURE);
         }
         }
@@ -423,7 +422,7 @@ const vec Cell::from_crystal(const vec& pos) const {
 
 
 void Cell::ad_atom(vec pos, int ele_type) {
-    atom tmp;
+    Atom tmp;
     tmp.type = ele_type;
     tmp.ele = &ele_list[ele_type];
     tmp.pos = pos;
@@ -436,7 +435,7 @@ void Cell::ad_atom(vec pos, int ele_type) {
 
 void Cell::rm_atom(int ind_atm) {
     if (atm_list[ind_atm].if_move <= 1) {
-        cout<<"Error: Can not remove atom "<<ind_atm+1<<' '<<atm_list[ind_atm].ele->sym<<", not removable"<<endl;
+        cout<<"Error: Can not remove atom "<<ind_atm+1<<' '<<atm_list[ind_atm].ele->sym_<<", not removable"<<endl;
         exit(EXIT_FAILURE);
     }
     atm_list.erase(atm_list.begin() + ind_atm);
@@ -501,13 +500,13 @@ void Cell :: print() const {
     cout<<"Total movable atoms: "<<num_atm_move<<endl;
     cout<<"Atoms per elements: "<<endl;
     for(int t1=0; t1<num_ele; t1++)
-        cout<<ele_list[t1].sym<<'\t'<<num_ele_each[t1]<<endl;
+        cout<<ele_list[t1].sym_<<'\t'<<num_ele_each[t1]<<endl;
     cout<<"Reovable atoms per elements: "<<endl;
     for(int t1=0; t1<num_ele; t1++)
-        cout<<ele_list[t1].sym<<'\t'<<num_ele_each_remove[t1]<<endl;
+        cout<<ele_list[t1].sym_<<'\t'<<num_ele_each_remove[t1]<<endl;
     cout<<"Movable atoms per elements: "<<endl;
     for(int t1=0; t1<num_ele; t1++)
-        cout<<ele_list[t1].sym<<'\t'<<num_ele_each_move[t1]<<endl;
+        cout<<ele_list[t1].sym_<<'\t'<<num_ele_each_move[t1]<<endl;
 //	cout<<"List of elements:"<<endl;
 //	for(int t1=0; t1<num_ele; t1++)
 //		ele_list[t1].print();

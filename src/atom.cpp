@@ -8,7 +8,7 @@
 
 using namespace std;
 
-void atom :: line_from_in(string tmp, vector<element>& ele_list)
+void Atom::line_from_in(string tmp, vector<Element>& ele_list)
 {
 	string ele_symbol;
 	stringstream ss;
@@ -18,7 +18,7 @@ void atom :: line_from_in(string tmp, vector<element>& ele_list)
 	ele = nullptr;
 	for (size_t t1=0 ; t1 < ele_list.size() ; t1++)
 	{
-		if (ele_symbol == ele_list[t1].sym)
+		if (ele_symbol == ele_list[t1].sym_)
 		{
 			type = t1;
 			ele = &ele_list[t1];
@@ -32,8 +32,7 @@ void atom :: line_from_in(string tmp, vector<element>& ele_list)
 	}
 }
 
-void atom :: print() const
+void Atom::print() const
 {
-	cout<<ele->sym<<'\t'<<pos<<'\t'<<if_move<<endl;
-//	ele->print();
+	cout<<ele->sym_<<'\t'<<pos<<'\t'<<if_move<<endl;
 }
