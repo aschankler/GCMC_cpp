@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <algorithm>
 #include <string>
 #include <cstdlib>
 #include "element.h"
@@ -11,17 +12,59 @@
 
 using namespace std;
 
+namespace gcmc {
+	std::string version = "0.3.0";
+}
 
-int main()
+
+// From: https://stackoverflow.com/a/868894
+class CliParser {
+    public:
+        CliParser(int &argc, char **argv) {
+            for (int i = 1; i < argc; ++i)
+                tokens_.push_back(std::string(argv[i]));
+        }
+        const std::string& get_option(const std::string &option) const {
+            std::vector<std::string>::const_iterator itr;
+            itr =  std::find(tokens_.begin(), tokens_.end(), option);
+            if (itr != tokens_.end() && ++itr != tokens_.end()) {
+                return *itr;
+            }
+            static const std::string empty_string("");
+            return empty_string;
+        }
+        bool option_exists(const std::string &option) const {
+            return std::find(tokens_.begin(), tokens_.end(), option) != tokens_.end();
+        }
+    private:
+        std::vector<std::string> tokens_;
+};
+
+
+int main(int argc, char *argv[])
 {
+	// Parse CLI options
+	CliParser options(argc, argv);
+
+	if (options.option_exists("-v") || options.option_exists("--version")) {
+		cout << "aiGCMC " << gcmc::version << endl;
+		exit(EXIT_SUCCESS);
+	}
+
+	std::string in_file;
+	if (options.option_exists("-in")) {
+		in_file = options.get_option("-in");
+	} else {
+		in_file = "gcmc.in";
+	}
+
 	// input and output files
-	ifstream input;
 	ofstream log, opt_axsf, accept_axsf, trial_axsf, trial_xsf, prop_axsf;
 
 	gcmc::init_rng();
 
 	// read parameter file
-	input.open("gcmc.in");
+	ifstream input(in_file);
 	Cell cell_accept = cell_from_in(input);
 	MCMC mc_control = mcmc_from_in(input);
 	Calculator calculator = calculator_from_in(input);
