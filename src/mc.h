@@ -53,6 +53,17 @@ class SwapMove : public MCMove {
 };
 
 
+class ResSwapMove : public MCMove {
+  public:
+    ResSwapMove(double w = 1., std::string n = "ResSwap") : MCMove(w, n) {}
+    bool available(const Cell&) override;
+    Cell get_new_structure(const Cell&) override;
+    double prefactor(const Cell&, const Cell&) override;
+  private:
+    int old_type_, new_type_;
+};
+
+
 class DoubleMove : public MCMove {
   public:
     DoubleMove(double w = 1., std::string n = "Double")

@@ -108,7 +108,7 @@ bool AddDropMove::available(const Cell &cell) {
 }
 
 
-static int choose_drop(const Cell &cell_old, int &rm_idx) {
+static bool choose_drop(const Cell &cell_old, int &rm_idx) {
     std::uniform_int_distribution<> dist(0, cell_old.num_atm_remove - 1);
     // Select the ith removable atom
     int atm_id_tmp = dist(gcmc::rng);
@@ -117,12 +117,12 @@ static int choose_drop(const Cell &cell_old, int &rm_idx) {
             // Atom is removable
             if (atm_id_tmp == 0) {
                 rm_idx = t1;
-                return 1;
+                return true;
             }
             atm_id_tmp--;
         }
     }
-    return 0;
+    return false;
 }
 
 
@@ -301,6 +301,65 @@ double SwapMove::prefactor(const Cell &old, const Cell &trial) {
 
 
 // ----------------------------------------------------------------
+// ResSwapMove implementation
+// ----------------------------------------------------------------
+
+bool ResSwapMove::available(const Cell &cell) {
+    return cell.num_atm_remove > 0;
+}
+
+
+Cell ResSwapMove::get_new_structure(const Cell &cell) {
+    // find the first atom to switch
+    int swap_idx;
+    if (!choose_drop(cell, swap_idx))
+        throw std::runtime_error("Could not find swap move");
+    Atom swap_old_atm = cell.atm_list[swap_idx];
+    old_type_ = swap_old_atm.type_;
+
+    // Choose species to swap with
+    double add_weight_sum = 0;
+    for (int t1 = 0; t1 < cell.num_ele; t1++) {
+        if (t1 != old_type_)
+            add_weight_sum += cell.ele_list[t1].p_add_;
+    }
+
+    std::uniform_real_distribution<double> ele_dist(0., add_weight_sum);
+    add_weight_sum = ele_dist(gcmc::rng);
+    for (int t1 = 0; t1 < cell.num_ele; t1++) {
+        if (t1 != old_type_)
+            add_weight_sum -= cell.ele_list[t1].p_add_;
+        if(add_weight_sum <= 0) {
+            new_type_ = t1;
+            break;
+        }
+    }
+
+    // Explain move
+    cout << "Atom " << swap_idx << " " << cell.atom_type(swap_idx).sym_;
+    cout << " swapped to type " << cell.ele_list[new_type_].sym_;
+    cout << ", position " << swap_old_atm.pos_ << endl;
+
+    // Create new cell
+    Cell cell_new = cell;
+    cell_new.rm_atom(swap_idx);
+    cell_new.ad_atom(swap_old_atm.pos_, new_type_);
+    return cell_new;
+}
+
+
+double ResSwapMove::prefactor(const Cell &old, const Cell &trial) {
+    // Ratio of sampling weights
+    double prefactor = trial.ele_list[old_type_].p_add_ / trial.ele_list[new_type_].p_add_;
+
+    if (trial.control.if_change_v_)
+        prefactor *= pow((trial.get_volume() / old.get_volume()), old.num_atm);
+
+    return prefactor;
+}
+
+
+// ----------------------------------------------------------------
 // DoubleMove implementation
 // ----------------------------------------------------------------
 
@@ -468,6 +527,13 @@ static MCMoveList init_actions_from_weights(
     ) {
         auto db_mov = std::make_shared<DoubleMove>(action_weight.at("double"));
         moves.push_back(std::move(db_mov));
+    }
+
+    if (action_weight.find("resswap") != action_weight.end()
+        && action_weight.at("resswap") > EPS
+    ) {
+        auto rs_mov = std::make_shared<ResSwapMove>(action_weight.at("resswap"));
+        moves.push_back(std::move(rs_mov));
     }
 
     return moves;
